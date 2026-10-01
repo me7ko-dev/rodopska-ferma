@@ -1,0 +1,24 @@
+// Снимка на играта: node test/shot.mjs [изход.png] [ширина] [височина] [js за изпълнение преди снимката]
+import { createRequire } from 'module';
+import { execSync } from 'child_process';
+const require = createRequire(import.meta.url);
+const { chromium } = require(execSync('npm root -g').toString().trim() + '/playwright');
+const out = process.argv[2] || 'test/tmp/shot.png';
+const w = +(process.argv[3] || 1280), h = +(process.argv[4] || 720);
+const js = process.argv[5] || '';
+const url = process.env.URL || 'http://localhost:5191/';
+const exe = process.env.CHROME_PATH || (process.env.LOCALAPPDATA + '/ms-playwright/chromium-1234/chrome-win64/chrome.exe');
+const browser = await chromium.launch({ executablePath: exe, headless: process.env.HEADED ? false : true, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: !!process.env.TOUCH, isMobile: !!process.env.TOUCH });
+const logs = [];
+page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') logs.push(m.type() + ': ' + m.text()); });
+page.on('pageerror', (e) => logs.push('PAGEERROR: ' + e.message));
+await page.goto(url, { waitUntil: 'load' });
+await page.waitForFunction(() => window.__rf?.ready, null, { timeout: 120000 }).catch(() => logs.push('ТАЙМАУТ при зареждане'));
+if (js) await page.evaluate(js);
+await page.waitForTimeout(+(process.env.WAIT || 2500));
+await page.screenshot({ path: out });
+const info = await page.evaluate(() => { const e = window.__rf?.engine; return e ? { fps: Math.round(e.fps), calls: e.renderer.info.render.calls, tris: e.renderer.info.render.triangles, gpu: (() => { const gl = e.renderer.getContext(); const d = gl.getExtension('WEBGL_debug_renderer_info'); return d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : '?'; })() } : null; });
+console.log(JSON.stringify(info));
+console.log(logs.slice(0, 15).join('\n'));
+await browser.close();

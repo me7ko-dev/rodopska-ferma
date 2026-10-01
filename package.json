@@ -1,0 +1,28 @@
+{
+  "name": "rodopska-ferma",
+  "productName": "Родопска ферма",
+  "version": "0.1.0",
+  "description": "3D игра за ферма в Родопите",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host --port 4174",
+    "check": "tsc --noEmit",
+    "models": "node tools/download-models.mjs",
+    "deploy": "npm run build && node desktop/deploy.mjs",
+    "play": "node test/play.mjs",
+    "shot": "node test/shot.mjs"
+  },
+  "dependencies": {
+    "@fontsource/rubik": "^5.3.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "^4.5.1",
+    "@types/three": "^0.180.0",
+    "typescript": "5.9",
+    "vite": "^7.3.6"
+  }
+}
