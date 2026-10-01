@@ -193,7 +193,7 @@ b({ id: 'barn', name: 'Хамбар', desc: 'Тук се пазят продук
 b({ id: 'silo', name: 'Силоз', desc: 'Тук се пазят зърното и зеленчуците.', model: 'silo_house', size: 9, foot: [5, 5], level: 1, price: 0, kind: 'storage', unique: true });
 
 // специални
-b({ id: 'house', name: 'Твоята къща', desc: 'Колкото по-хубава е къщата, толкова повече монети носи всеки ден.', model: 'house_wood', size: 8, foot: [8, 8], level: 1, price: 0, kind: 'special', unique: true });
+b({ id: 'house', name: 'Твоята къща', desc: 'Колкото по-хубава е къщата, толкова повече монети носи всеки ден.', model: 'house_cottage', size: 8, foot: [8, 8], level: 1, price: 0, kind: 'special', unique: true });
 b({ id: 'board', name: 'Табло за поръчки', desc: 'Хората от селото поръчват стоки.', model: 'sign', size: 2.4, foot: [3, 2], level: 1, price: 0, kind: 'special', unique: true });
 b({ id: 'market', name: 'Сергия', desc: 'Продавай стоките си на минувачите.', model: 'market2', size: 4.5, foot: [5, 4], level: 3, price: 150, kind: 'special', unique: true });
 b({ id: 'garage', name: 'Гараж', desc: 'Колите ти. Купи нова кола и я покарай из селото!', model: 'barn_open', size: 7, foot: [7, 6], level: 3, price: 250, kind: 'special', unique: true });
@@ -265,7 +265,7 @@ export const CARS: CarDef[] = [
 
 // --- къщата ти (подобрения) ---
 export const HOME_TIERS = [
-  { name: 'Стара къщурка', model: 'house_wood', size: 7, level: 1, price: 0, daily: 20 },
+  { name: 'Малка вила', model: 'house_cottage', size: 8, level: 1, price: 0, daily: 20 },
   { name: 'Родопска къща', model: 'house_red1', size: 8.5, level: 4, price: 1500, daily: 60 },
   { name: 'Каменна къща', model: 'house_med2', size: 9.5, level: 8, price: 6000, daily: 150 },
   { name: 'Голяма къща с веранда', model: 'house_porch', size: 11, level: 12, price: 18000, daily: 320 },
@@ -277,7 +277,7 @@ export const VILLAGE_HOUSES = [
   { name: 'Малка къщичка', model: 'house_wood', size: 7, level: 3, price: 900, rent: 30 },
   { name: 'Къща с червен покрив', model: 'house_red2', size: 8.5, level: 5, price: 2200, rent: 70 },
   { name: 'Дървена вила', model: 'cabin', size: 8, level: 6, price: 3500, rent: 100 },
-  { name: 'Къща за гости', model: 'house_cottage', size: 8.5, level: 8, price: 6000, rent: 160 },
+  { name: 'Къща за гости', model: 'house_fantasy', size: 9, level: 8, price: 6000, rent: 160 },
   { name: 'Родопска къща', model: 'house_red1', size: 8.5, level: 9, price: 8000, rent: 210 },
   { name: 'Каменна къща', model: 'house_med2', size: 9.5, level: 11, price: 12000, rent: 300 },
   { name: 'Странноприемница', model: 'inn', size: 10, level: 12, price: 16000, rent: 400 },

@@ -37,7 +37,7 @@ const PRELOAD = [
   'lilypad', 'mallard', 'duck', 'm_farmer', 'hen', 'chicken', 'bee',
   'man1', 'man2', 'woman1', 'woman_dress', 'woman_casual', 'man_sleeves', 'woman_tank', 'm_worker', 'w_worker',
   'car_sedan1', 'car_sedan2', 'car_taxi', 'car_suv', 'car_hatch', 'car_pickup', 'car_truck', 'car_sport1',
-  'house_wood', 'barn_red', 'silo_house', 'windmill', 'coop', 'bench1', 'mailbox2', 'hay', 'barrel', 'well', 'market2', 'barn_open', 'sign',
+  'house_cottage', 'house_wood', 'barn_red', 'silo_house', 'windmill', 'coop', 'bench1', 'mailbox2', 'hay', 'barrel', 'well', 'market2', 'barn_open', 'sign',
 ];
 
 const TIPS = [
