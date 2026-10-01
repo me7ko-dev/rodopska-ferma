@@ -22,9 +22,10 @@ import { Vehicles } from './game/vehicles';
 import { People } from './game/npc';
 import { refillOrders } from './game/orders';
 import { initFx, setFxScene, updateMarkers, updateBounces, updateSparks } from './game/fx';
-import { bindUI } from './ui/ui';
+import { bindUI, bindDayNight } from './ui/ui';
 import { icon } from './ui/icons';
 import { Ambient } from './world/ambient';
+import { DayNight } from './world/daynight';
 import { rainSound } from './audio/sfx';
 import { UI } from './ui/api';
 
@@ -147,6 +148,16 @@ async function boot() {
   const people = new People(scene, farm);
   bindUI({ farm, village, vehicles, people, engine });
   const ambient = new Ambient(scene, farm, engine);
+  const daynight = new DayNight(engine, sky, scene);
+  bindDayNight(daynight);
+  // топла светлина от прозорците на къщата нощем
+  const hv = farm.byType('house')[0];
+  if (hv) {
+    const glow = new THREE.Sprite(daynight.glowMat);
+    glow.position.set(0, 1.8, hv.def.foot[1] / 2 - 1.2);
+    glow.scale.setScalar(6);
+    hv.root.add(glow);
+  }
   ambient.onRain = (on) => {
     rainSound(on);
     UI.toast(on ? '🌧 Вали дъжд — културите растат два пъти по-бързо!' : '☀️ Дъждът спря', on ? 'ok' : 'info');
@@ -169,6 +180,7 @@ async function boot() {
     vehicles.update(dt);
     people.update(dt);
     ambient.update(dt, engine.time.value);
+    daynight.update(dt, engine.time.value, ambient.rainAmt);
     for (const d of ducks) {
       d.a += d.s * dt;
       d.o.position.set(POND.x + Math.cos(d.a) * POND.rx * d.r, 0.14 + Math.sin(engine.time.value * 2 + d.r * 9) * 0.02, POND.z + Math.sin(d.a) * POND.rz * d.r);
@@ -190,7 +202,7 @@ async function boot() {
     for (const h of HOME_TIERS) rest.add(h.model);
     loadAll([...rest]);
   }, 3000);
-  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, S, THREE, icon, ready: true };
+  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, S, THREE, icon, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);

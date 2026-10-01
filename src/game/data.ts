@@ -328,3 +328,16 @@ export const ANIMALS: Record<string, { name: string; feed: string | null; produc
   bee: { name: 'Кошер', feed: null, product: 'honey', time: 2700, price: 500, model: '', size: 1 },
   goat: { name: 'Коза', feed: 'feed_goat', product: 'goatmilk', time: 4200, price: 1200, model: 'goat1', size: 1.8 },
 };
+
+// --- постижения (всяко има 4 нива; наградата е в диаманти) ---
+export interface AchDef { id: string; name: string; desc: string; icon: string; tiers: number[]; reward: number[] }
+export const ACHIEVEMENTS: AchDef[] = [
+  { id: 'harvested', name: 'Жътвар', desc: 'Ожъни {n} култури', icon: 'wheat', tiers: [20, 150, 800, 3000], reward: [2, 4, 8, 15] },
+  { id: 'produced', name: 'Майстор', desc: 'Произведи {n} стоки', icon: 'bread', tiers: [10, 60, 300, 1200], reward: [2, 4, 8, 15] },
+  { id: 'orders', name: 'Доставчик', desc: 'Изпълни {n} поръчки', icon: 'b:board', tiers: [5, 30, 120, 500], reward: [2, 5, 10, 20] },
+  { id: 'visitors', name: 'Добър съсед', desc: 'Обслужи {n} посетители', icon: 'coin', tiers: [3, 15, 60, 250], reward: [2, 4, 8, 15] },
+  { id: 'earned', name: 'Богаташ', desc: 'Спечели {n} монети', icon: 'coin', tiers: [2000, 20000, 200000, 1000000], reward: [3, 6, 12, 25] },
+  { id: 'houses', name: 'Хазяин', desc: 'Купи {n} къщи в селото', icon: 'm:house_red2', tiers: [1, 3, 6, 12], reward: [3, 6, 12, 30] },
+  { id: 'cars', name: 'Шофьор', desc: 'Купи {n} коли', icon: 'car:pickup', tiers: [1, 3, 6, 10], reward: [3, 6, 12, 30] },
+  { id: 'level', name: 'Опитен фермер', desc: 'Стигни ниво {n}', icon: 'star', tiers: [5, 10, 15, 20], reward: [5, 10, 15, 25] },
+];

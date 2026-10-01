@@ -35,7 +35,7 @@ export class Ambient {
   rainLeft = 0;
   nextWeather = 240 + Math.random() * 240;
   onRain: (on: boolean) => void = () => {};
-  private rainAmt = 0;
+  rainAmt = 0;
   private baseSun = 2.75;
   private baseHemi = 1.15;
 
@@ -201,9 +201,7 @@ export class Ambient {
       pos.needsUpdate = true;
       this.rain.position.set(c.x, 0, c.z);
     }
-    // по-тъмно и сиво, докато вали
-    this.engine.sun.intensity = this.baseSun * (1 - a * 0.55);
-    this.engine.hemi.intensity = this.baseHemi * (1 - a * 0.3);
+    // мъглата е по-сива и по-гъста, докато вали (светлината я управлява DayNight)
     const fog = this.scene.fog as THREE.Fog;
     fog.color.copy(SKY.fog).lerp(new THREE.Color('#9aa6b0'), a * 0.8);
     fog.near = 260 - a * 160;

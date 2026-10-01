@@ -59,7 +59,24 @@ export function buildSky(scene: THREE.Scene) {
     clouds.add(c);
   }
   scene.add(clouds);
+  // звезди (виждат се само нощем)
+  const starN = 1400;
+  const sp = new Float32Array(starN * 3);
+  const sr = rng(77);
+  for (let i = 0; i < starN; i++) {
+    const th = sr() * Math.PI * 2, ph = Math.acos(1 - sr() * 0.95);
+    sp.set([Math.sin(ph) * Math.cos(th) * 1300, Math.cos(ph) * 1300, Math.sin(ph) * Math.sin(th) * 1300], i * 3);
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+  stars.renderOrder = -9;
+  stars.frustumCulled = false;
+  scene.add(stars);
   return {
+    uniforms: mat.uniforms,
+    stars,
+    cloudMat: cm,
     update(dt: number) {
       for (const c of clouds.children) {
         c.position.x += c.userData.speed * dt;

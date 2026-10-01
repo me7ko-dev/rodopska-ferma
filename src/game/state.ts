@@ -48,6 +48,7 @@ export interface Save {
   sound: boolean;
   music: boolean;
   stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number };
+  ach: Record<string, number>;
   created: number;
   last: number;
 }
@@ -88,6 +89,7 @@ export function freshSave(): Save {
     sound: true,
     music: true,
     stats: { harvested: 0, produced: 0, orders: 0, earned: 0, visitors: 0 },
+    ach: {},
     created: t,
     last: t,
   };
@@ -223,4 +225,24 @@ export const LAND_RECT: Record<string, [number, number, number, number]> = {};
 export function skipCost(sec: number) {
   if (sec <= 0) return 0;
   return Math.max(1, Math.ceil(Math.sqrt(sec / 60) * 1.3));
+}
+
+// ---------- постижения ----------
+import { ACHIEVEMENTS } from './data';
+export function achValue(id: string) {
+  switch (id) {
+    case 'houses': return Object.keys(S.village).length;
+    case 'cars': return S.cars.length;
+    case 'level': return S.level;
+    default: return (S.stats as Record<string, number>)[id] ?? 0;
+  }
+}
+/** Колко постижения чакат да се вземат наградите им. */
+export function achReady() {
+  let n = 0;
+  for (const a of ACHIEVEMENTS) {
+    const got = S.ach[a.id] ?? 0;
+    if (got < a.tiers.length && achValue(a.id) >= a.tiers[got]) n++;
+  }
+  return n;
 }

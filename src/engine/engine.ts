@@ -100,6 +100,10 @@ export class Engine {
     this.sun.position.set(tx + this.sunOffset.x, this.sunOffset.y, tz + this.sunOffset.z);
   }
 
+  setSunOffset(x: number, y: number, z: number) {
+    this.sunOffset.set(x, y, z);
+  }
+
   onUpdate(f: Updater) {
     this.updaters.push(f);
   }

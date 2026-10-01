@@ -1,7 +1,7 @@
 import { UI } from './api';
 import { icon, img } from './icons';
-import { S, on, save, spend, spendDiamonds, addCoins, addDiamonds, addXP, count, used, cap, isSiloItem, takeAll, now, skipCost, resetSave, emit } from '../game/state';
-import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMALS, TREES, MAX_ANIMALS, xpForLevel, unlocksAt, type BuildingDef } from '../game/data';
+import { S, on, save, spend, spendDiamonds, addCoins, addDiamonds, addXP, count, used, cap, isSiloItem, takeAll, now, skipCost, resetSave, emit, achValue, achReady } from '../game/state';
+import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMALS, TREES, MAX_ANIMALS, ACHIEVEMENTS, xpForLevel, unlocksAt, type BuildingDef } from '../game/data';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
@@ -17,6 +17,10 @@ import * as THREE from 'three';
 
 interface Ctx { farm: Farm; village: Village; vehicles: Vehicles; people: People; engine: Engine }
 let C: Ctx;
+let DN: { mode: 'real' | 'day'; setMode(m: 'real' | 'day'): void } | null = null;
+export function bindDayNight(d: typeof DN) {
+  DN = d;
+}
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 const fmt = (n: number) => Math.floor(n).toLocaleString('bg-BG');
@@ -41,7 +45,7 @@ function buildHUD() {
   ui.innerHTML = `
   <div id="hud-top">
     <div class="lvl" data-open="profile">
-      <div class="lvl-star">${img('star')}<b class="outl" id="hud-level">1</b></div>
+      <div class="lvl-star">${img('star')}<b class="outl" id="hud-level">1</b><div class="badge" id="badge-ach" style="position:absolute;top:-4px;right:-6px;min-width:22px;height:22px;border-radius:11px;background:#e5533d;border:2px solid #fff;color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center"></div></div>
       <div class="xpbar" id="hud-xp"><i id="hud-xpfill"></i><span class="outl" id="hud-xptext">0/10</span></div>
       <div class="farmname outl" id="hud-name"></div>
     </div>
@@ -98,6 +102,10 @@ function refreshHUD() {
   const daily = new Date(S.lastDaily).toDateString() !== new Date().toDateString();
   $('#badge-home').textContent = daily ? '!' : rent > 0 ? '🪙' : '';
   $('#btn-garage').style.display = C.farm.byType('garage').length ? '' : 'none';
+  const ach = achReady();
+  const ab = $('#badge-ach');
+  ab.textContent = ach ? String(ach) : '';
+  ab.style.display = ach ? 'flex' : 'none';
 }
 
 // =====================================================================
@@ -730,6 +738,7 @@ function openSettings() {
       <div class="row"><b>Име на фермата</b><span class="sp"></span><input class="name" id="farmname" value="${S.name.replace(/"/g, '&quot;')}" maxlength="24"><button class="btn xs" data-act="name">✓</button></div>
       <div class="row"><b>Звуци</b><span class="sp"></span><button class="btn sm ${S.sound ? '' : 'gray'}" data-act="sound">${S.sound ? 'Вкл.' : 'Изкл.'}</button></div>
       <div class="row"><b>Музика</b><span class="sp"></span><button class="btn sm ${S.music ? '' : 'gray'}" data-act="music">${S.music ? 'Вкл.' : 'Изкл.'}</button></div>
+      <div class="row"><b>Ден и нощ</b><span class="sp"></span><button class="btn xs ${DN?.mode !== 'day' ? '' : 'gray'}" data-act="dn" data-m="real">Истинско време</button> <button class="btn xs ${DN?.mode === 'day' ? '' : 'gray'}" data-act="dn" data-m="day">Винаги ден</button></div>
       <div class="row"><b>Графика</b><span class="sp"></span>${(['low', 'medium', 'high'] as const).map((q) => `<button class="btn xs ${C.engine.quality === q ? '' : 'gray'}" data-act="q" data-q="${q}">${{ low: 'Бърза', medium: 'Средна', high: 'Най-хубава' }[q]}</button>`).join(' ')}</div>
       <div class="row"><b>Как се играе</b><span class="sp"></span><button class="btn sm blue" data-act="help">Покажи</button></div>
       <div class="mt"><b>Автори на 3D моделите</b><div class="credits" id="credits">Зареждане…</div></div>
@@ -740,6 +749,7 @@ function openSettings() {
       sound: () => { S.sound = !S.sound; save(); },
       music: () => { S.music = !S.music; save(); S.music ? startMusic() : stopMusic(); },
       q: (el) => C.engine.setQuality(el.dataset.q as any),
+      dn: (el) => DN?.setMode(el.dataset.m as 'real' | 'day'),
       help: () => { close(); showHelp(); },
       reset: () => {
         if (!confirmTwice()) return;
@@ -765,15 +775,42 @@ function confirmTwice() {
 
 function openProfile() {
   open(S.name, {
-    render: () => `<div class="center"><b style="font-size:20px">Ниво ${S.level}</b> · ${fmt(S.xp)} / ${fmt(xpForLevel(S.level))} опит</div>
-      <div class="grid mt">
+    render: () => {
+      let html = `<div class="center"><b style="font-size:20px">Ниво ${S.level}</b> · ${fmt(S.xp)} / ${fmt(xpForLevel(S.level))} опит</div>
+      <div class="panel-desc">Постижения — вземи диамантите, когато изпълниш целта. С диаманти се ускорява всичко.</div><div class="orders">`;
+      for (const a of ACHIEVEMENTS) {
+        const got = S.ach[a.id] ?? 0;
+        const done = got >= a.tiers.length;
+        const goal = a.tiers[Math.min(got, a.tiers.length - 1)];
+        const val = achValue(a.id);
+        const ready = !done && val >= goal;
+        const stars = '★'.repeat(got) + '☆'.repeat(a.tiers.length - got);
+        html += `<div class="order ${ready ? 'ok' : ''}"><div class="row"><img class="ic-md" src="${icon(a.icon)}"><div><b>${a.name}</b> <span style="color:#e0a800">${stars}</span>
+          <div class="sub" style="font-size:12.5px;color:#8a6440">${a.desc.replace('{n}', fmt(goal))}</div></div></div>
+          <div class="capbar" style="margin:2px 0"><i style="width:${Math.min(100, (val / goal) * 100)}%"></i><span class="outl">${fmt(Math.min(val, goal))} / ${fmt(goal)}</span></div>
+          ${done ? '<b class="center">Завършено! 🏆</b>' : `<button class="btn sm ${ready ? 'gold' : 'gray'}" data-act="claim" data-id="${a.id}">Вземи ${img('diamond')} ${a.reward[got]}</button>`}</div>`;
+      }
+      html += `</div><div class="grid mt">
         <div class="card"><img class="ic" src="${icon('wheat')}"><div class="nm">Ожънато</div><b>${fmt(S.stats.harvested)}</b></div>
         <div class="card"><img class="ic" src="${icon('bread')}"><div class="nm">Произведено</div><b>${fmt(S.stats.produced)}</b></div>
         <div class="card"><img class="ic" src="${icon('b:board')}"><div class="nm">Поръчки</div><b>${fmt(S.stats.orders)}</b></div>
         <div class="card"><img class="ic" src="${icon('coin')}"><div class="nm">Спечелени монети</div><b>${fmt(S.stats.earned)}</b></div>
-      </div>
-      <div class="panel-desc mt">Диаманти се печелят с всяко ново ниво. С тях може да ускориш нещо веднага.</div>`,
-    actions: {},
+      </div>`;
+      return html;
+    },
+    actions: {
+      claim: (el) => {
+        const a = ACHIEVEMENTS.find((x) => x.id === el.dataset.id)!;
+        const got = S.ach[a.id] ?? 0;
+        if (got >= a.tiers.length || achValue(a.id) < a.tiers[got]) { sfx('error'); return; }
+        S.ach[a.id] = got + 1;
+        addDiamonds(a.reward[got]);
+        flyTo('diamond', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-diamonds', Math.min(6, a.reward[got]));
+        sfx('levelup');
+        save();
+        refreshHUD();
+      },
+    },
   });
 }
 
