@@ -71,6 +71,21 @@ if (!process.env.TOUCH) {
   await page.mouse.down();
   for (const f of [f4, f5]) await page.mouse.move(f.x, f.y, { steps: 8 });
   await page.mouse.up();
+} else {
+  // истинско плъзгане с пръст (през DevTools протокола)
+  const cdp = await page.context().newCDPSession(page);
+  const pt = (p) => [{ x: p.x, y: p.y, id: 1, radiusX: 8, radiusY: 8, force: 1 }];
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(f3) });
+  let prev = f3;
+  for (const f of [f4, f5]) {
+    for (let k = 1; k <= 8; k++) {
+      const q = { x: prev.x + (f.x - prev.x) * k / 8, y: prev.y + (f.y - prev.y) * k / 8 };
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(q) });
+      await page.waitForTimeout(16);
+    }
+    prev = f;
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 await page.waitForTimeout(400);
 s1 = await st();
