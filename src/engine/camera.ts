@@ -190,16 +190,23 @@ export class CameraRig {
   update(dt: number) {
     const g = this.goal;
     if (this.follow) {
-      g.x = this.follow.position.x;
-      g.z = this.follow.position.z;
+      // следим колата плътно и гледаме малко напред по посоката ѝ
+      const f = this.follow;
+      const ahead = (f.userData.speed ?? 0) * 0.35;
+      g.x = f.position.x + Math.sin(f.rotation.y) * ahead;
+      g.z = f.position.z + Math.cos(f.rotation.y) * ahead;
+      this.target.x = g.x;
+      this.target.z = g.z;
     }
     if (!this.gesture && this.vel.lengthSq() > 0.01) {
       g.x += this.vel.x * dt;
       g.z += this.vel.y * dt;
       this.vel.multiplyScalar(Math.pow(0.04, dt));
     }
-    g.x = clamp(g.x, this.bounds.minX, this.bounds.maxX);
-    g.z = clamp(g.z, this.bounds.minZ, this.bounds.maxZ);
+    if (!this.follow) {
+      g.x = clamp(g.x, this.bounds.minX, this.bounds.maxX);
+      g.z = clamp(g.z, this.bounds.minZ, this.bounds.maxZ);
+    }
     const k = 1 - Math.pow(0.0008, dt);
     this.target.x = lerp(this.target.x, g.x, k);
     this.target.z = lerp(this.target.z, g.z, k);

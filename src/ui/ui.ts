@@ -12,6 +12,7 @@ import type { Village } from '../game/village';
 import type { Vehicles } from '../game/vehicles';
 import type { People } from '../game/npc';
 import type { Engine } from '../engine/engine';
+import { loadModel } from '../engine/assets';
 import * as THREE from 'three';
 
 interface Ctx { farm: Farm; village: Village; vehicles: Vehicles; people: People; engine: Engine }
@@ -577,7 +578,7 @@ function openHome() {
         addXP(Math.round(next.price / 25));
         save();
         const hv = C.farm.byType('house')[0];
-        hv?.setVisual?.();
+        loadModel(next.model).then(() => hv?.setVisual?.());
         if (hv) { sparkle(centerOf(hv.e).setY(4), 40); C.farm.rig.flyTo(hv.root.position.x, hv.root.position.z, 40); }
         sfx('build');
         close();

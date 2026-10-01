@@ -1,0 +1,44 @@
+// Проба на карането: гараж + пикап, после газ по пътя към селото. node test/drive.mjs
+import { createRequire } from 'module';
+import { execSync } from 'child_process';
+const require = createRequire(import.meta.url);
+const { chromium } = require(execSync('npm root -g').toString().trim() + '/playwright');
+const exe = process.env.CHROME_PATH || (process.env.LOCALAPPDATA + '/ms-playwright/chromium-1234/chrome-win64/chrome.exe');
+const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const errors = [];
+page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message));
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+await page.goto('http://localhost:5191/');
+await page.waitForFunction(() => window.__rf?.ready, null, { timeout: 120000 });
+await page.evaluate(async () => {
+  const rf = window.__rf;
+  rf.S.level = 12; rf.S.coins = 99999;
+  rf.farm.add('garage', 14, 14);
+  rf.S.cars.push('pickup', 'sport', 'tractor');
+  rf.vehicles.refresh();
+});
+await page.waitForTimeout(2500);
+await page.evaluate(() => { const rf = window.__rf; const g = rf.farm.byType('garage')[0]; rf.rig.flyTo(g.root.position.x, g.root.position.z, 26); });
+await page.waitForTimeout(2000);
+await page.screenshot({ path: 'test/tmp/drive-1-garage.png' });
+await page.evaluate(() => window.__rf.vehicles.startDrive('sport'));
+await page.waitForTimeout(1500);
+// напред към пътя (юг), после завой наляво (изток) към селото
+await page.keyboard.down('ArrowUp');
+await page.waitForTimeout(2500);
+await page.screenshot({ path: 'test/tmp/drive-2.png' });
+await page.keyboard.down('ArrowLeft');
+await page.waitForTimeout(900);
+await page.keyboard.up('ArrowLeft');
+await page.waitForTimeout(3500);
+await page.screenshot({ path: 'test/tmp/drive-3.png' });
+await page.keyboard.up('ArrowUp');
+const pos = await page.evaluate(() => { const d = window.__rf.vehicles.drive; return d ? { x: d.obj.position.x.toFixed(1), z: d.obj.position.z.toFixed(1), v: window.__rf.vehicles.speedKmh() } : null; });
+console.log('кола:', JSON.stringify(pos));
+await page.evaluate(() => window.__rf.vehicles.stopDrive());
+await page.evaluate(() => window.__rf.rig.flyTo(100, 30, 60));
+await page.waitForTimeout(3500);
+await page.screenshot({ path: 'test/tmp/drive-4-village.png' });
+console.log(errors.length ? errors.join('\n') : 'без грешки');
+await browser.close();

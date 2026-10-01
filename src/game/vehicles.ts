@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CARS } from './data';
 import { S } from './state';
-import { instance } from '../engine/assets';
+import { instance, has, loadModel } from '../engine/assets';
 import { heightAt, roadZAt, ROAD_Z, DRIVE, FARM } from '../world/layout';
 import type { Farm } from './world';
 import { centerOf, footprint } from './world';
@@ -39,6 +39,9 @@ export class Vehicles {
 
   /** Подрежда купените коли до гаража. */
   refresh() {
+    const owned0 = CARS.filter((car) => S.cars.includes(car.id));
+    const missing = owned0.map((c) => c.model).filter((m) => !has(m));
+    if (missing.length) { Promise.all(missing.map((m) => loadModel(m))).then(() => this.refresh()); }
     this.parked.clear();
     const g = this.garage();
     if (!g) return;
@@ -79,9 +82,10 @@ export class Vehicles {
   }
 
   // ---------- каране ----------
-  startDrive(carId: string) {
+  async startDrive(carId: string) {
     const car = CARS.find((c) => c.id === carId);
     if (!car) return;
+    await loadModel(car.model);
     this.stopDrive();
     const obj = instance(car.model, car.size);
     const g = this.garage();
@@ -192,6 +196,7 @@ export class Vehicles {
     const h = Math.max(0, heightAt(dv.obj.position.x, dv.obj.position.z));
     dv.obj.position.y = h + 0.05;
     dv.obj.rotation.y = dv.heading;
+    dv.obj.userData.speed = dv.speed;
     // наклон по терена
     const ahead = heightAt(dv.obj.position.x + Math.sin(dv.heading) * 2, dv.obj.position.z + Math.cos(dv.heading) * 2);
     dv.obj.rotation.x = -Math.atan2(Math.max(0, ahead) - h, 2) * 0.8;

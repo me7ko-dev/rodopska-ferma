@@ -323,9 +323,11 @@ export class Farm implements GameInput {
   }
 
   // ---------- поставяне на нов обект / местене ----------
-  beginPlace(type: string, onDone?: (ok: boolean) => void, view?: View) {
+  async beginPlace(type: string, onDone?: (ok: boolean) => void, view?: View) {
     this.cancelPlace();
     const def = BUILDINGS[type];
+    // моделът може още да не е зареден (купува се за първи път)
+    await ensureModels([def.model, def.kind === 'animal' ? ANIMALS[def.animal!]?.model ?? '' : '']);
     const rot = view ? view.e.rot : 0;
     let x: number, z: number;
     if (view) { x = view.e.x; z = view.e.z; }

@@ -15,7 +15,7 @@ import { buildNature } from './world/nature';
 import { POND, FARM, DRIVE } from './world/layout';
 import { fence } from './game/props';
 import { S, save, now } from './game/state';
-import { BUILDINGS, HOME_TIERS, VILLAGE_HOUSES, ANIMALS } from './game/data';
+import { BUILDINGS, HOME_TIERS, VILLAGE_HOUSES, ANIMALS, CARS } from './game/data';
 import { Farm } from './game/world';
 import { Village } from './game/village';
 import { Vehicles } from './game/vehicles';
@@ -173,6 +173,14 @@ async function boot() {
     if (performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); }
   });
   engine.start();
+  // останалите модели (сгради за купуване, коли, къщи) — тихо във фонов режим
+  setTimeout(() => {
+    const rest = new Set<string>();
+    for (const b of Object.values(BUILDINGS)) if (b.model) rest.add(b.model);
+    for (const c of CARS) rest.add(c.model);
+    for (const h of HOME_TIERS) rest.add(h.model);
+    loadAll([...rest]);
+  }, 3000);
   (window as any).__rf = { engine, rig, farm, village, vehicles, people, S, THREE, icon, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');

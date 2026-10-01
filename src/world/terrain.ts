@@ -52,7 +52,7 @@ function detailTexture() {
 
 /** Теренът: плоска долина с фермата и селото, а наоколо родопски хълмове и планини. */
 export function buildTerrain() {
-  const seg = 300;
+  const seg = 220;
   const geo = new THREE.PlaneGeometry(SIZE, SIZE, seg, seg);
   geo.rotateX(-Math.PI / 2);
   geo.translate(CENTER_X, 0, 0);
