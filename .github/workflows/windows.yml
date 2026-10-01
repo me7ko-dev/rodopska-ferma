@@ -1,0 +1,47 @@
+# Windows програма (.exe) — сглобява се тук, в облака, не на лаптопа.
+# Резултатът е в Releases → latest → RodopskaFerma-windows.zip (Метко Стор го показва като „Свали за Windows“).
+name: Windows
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'public/**', 'index.html', 'desktop/**', 'package.json', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Пакети
+        run: npm ci
+      - name: Electron (самата програма)
+        run: node node_modules/electron/install.js
+      - name: Играта
+        run: npm run build
+      - name: Windows програмата
+        run: node desktop/build.mjs
+      - name: Архив
+        shell: pwsh
+        run: Compress-Archive -Path release/RodopskaFerma-win32-x64 -DestinationPath RodopskaFerma-windows.zip
+      - name: Издание „latest“
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest -y --cleanup-tag || true
+          gh release create latest RodopskaFerma-windows.zip \
+            --title "Родопска ферма — Windows" \
+            --notes "Свали RodopskaFerma-windows.zip, разархивирай и пусни RodopskaFerma.exe. Играе се и на телефон: https://me7ko-dev.github.io/rodopska-ferma/"

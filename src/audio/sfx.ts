@@ -143,3 +143,33 @@ export function stopMusic() {
   musicOn = false;
   if (ctx && musicGain) musicGain.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
 }
+
+// ---------- шум от дъжд ----------
+let rainSrc: AudioBufferSourceNode | null = null;
+let rainGain: GainNode | null = null;
+export function rainSound(on: boolean) {
+  if (!S.sound && on) return;
+  const c = ac();
+  if (on && !rainSrc) {
+    const len = c.sampleRate * 2;
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    rainSrc = c.createBufferSource();
+    rainSrc.buffer = buf;
+    rainSrc.loop = true;
+    const f = c.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 1400;
+    rainGain = c.createGain();
+    rainGain.gain.value = 0;
+    rainGain.gain.setTargetAtTime(0.09, c.currentTime, 2);
+    rainSrc.connect(f).connect(rainGain).connect(master!);
+    rainSrc.start();
+  } else if (!on && rainSrc) {
+    const src = rainSrc;
+    rainGain!.gain.setTargetAtTime(0, c.currentTime, 1.5);
+    setTimeout(() => src.stop(), 5000);
+    rainSrc = null;
+  }
+}

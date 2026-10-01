@@ -24,6 +24,9 @@ import { refillOrders } from './game/orders';
 import { initFx, setFxScene, updateMarkers, updateBounces, updateSparks } from './game/fx';
 import { bindUI } from './ui/ui';
 import { icon } from './ui/icons';
+import { Ambient } from './world/ambient';
+import { rainSound } from './audio/sfx';
+import { UI } from './ui/api';
 
 // Всички модели, които трябват веднага (останалите се зареждат при нужда).
 const PRELOAD = [
@@ -143,6 +146,11 @@ async function boot() {
   const vehicles = new Vehicles(scene, farm, rig);
   const people = new People(scene, farm);
   bindUI({ farm, village, vehicles, people, engine });
+  const ambient = new Ambient(scene, farm, engine);
+  ambient.onRain = (on) => {
+    rainSound(on);
+    UI.toast(on ? '🌧 Вали дъжд — културите растат два пъти по-бързо!' : '☀️ Дъждът спря', on ? 'ok' : 'info');
+  };
 
   // камера над фермата
   const dist = innerWidth < innerHeight ? 50 : 38;
@@ -160,6 +168,7 @@ async function boot() {
     village.update(dt);
     vehicles.update(dt);
     people.update(dt);
+    ambient.update(dt, engine.time.value);
     for (const d of ducks) {
       d.a += d.s * dt;
       d.o.position.set(POND.x + Math.cos(d.a) * POND.rx * d.r, 0.14 + Math.sin(engine.time.value * 2 + d.r * 9) * 0.02, POND.z + Math.sin(d.a) * POND.rz * d.r);
@@ -181,7 +190,7 @@ async function boot() {
     for (const h of HOME_TIERS) rest.add(h.model);
     loadAll([...rest]);
   }, 3000);
-  (window as any).__rf = { engine, rig, farm, village, vehicles, people, S, THREE, icon, ready: true };
+  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, S, THREE, icon, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);
