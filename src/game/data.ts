@@ -63,14 +63,14 @@ item('cherry', 'Череши', 'fruit', 30, 4, 12);
 item('walnut', 'Орехи', 'fruit', 36, 5, 15);
 
 // --- от животни ---
-item('egg', 'Яйца', 'animal', 12, 2, 2);
+item('egg', 'Яйца', 'animal', 12, 2, 1);
 item('milk', 'Мляко', 'animal', 24, 3, 5);
 item('wool', 'Вълна', 'animal', 40, 5, 8);
 item('honey', 'Мед', 'animal', 34, 4, 10);
 item('goatmilk', 'Козе мляко', 'animal', 46, 6, 13);
 
 // --- фураж ---
-item('feed_chicken', 'Храна за кокошки', 'feed', 4, 1, 2);
+item('feed_chicken', 'Храна за кокошки', 'feed', 4, 1, 1);
 item('feed_cow', 'Храна за крави', 'feed', 8, 1, 5);
 item('feed_sheep', 'Храна за овце', 'feed', 12, 1, 8);
 item('feed_goat', 'Храна за кози', 'feed', 14, 1, 13);
