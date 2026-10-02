@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { fbm, noise2, smooth, clamp, rng } from '../engine/noise';
+import { QUALITY } from '../engine/engine';
 import { heightAt, roadZAt, ROAD_W, FARM, DRIVE, ROAD_Z, VILLAGE_PLOTS, POND } from './layout';
 
 const SIZE = 1500;
@@ -52,7 +53,7 @@ function detailTexture() {
 
 /** Теренът: плоска долина с фермата и селото, а наоколо родопски хълмове и планини. */
 export function buildTerrain() {
-  const seg = 220;
+  const seg = QUALITY.value === 'high' ? 220 : QUALITY.value === 'medium' ? 170 : 120;
   const geo = new THREE.PlaneGeometry(SIZE, SIZE, seg, seg);
   geo.rotateX(-Math.PI / 2);
   geo.translate(CENTER_X, 0, 0);

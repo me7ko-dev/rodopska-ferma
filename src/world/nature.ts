@@ -160,7 +160,7 @@ export function buildNature(quality: 'low' | 'medium' | 'high') {
   const sizes: Record<string, number> = { n_pine4: 10, n_pine2: 10, n_pine3: 9.5, n_tree1: 8, n_tree2: 7.5, n_tree5: 8.5, tree_b: 6.5, tree_d: 6 };
   for (const [name, list] of Object.entries(near)) {
     for (const pl of list) pl.scale = 0.75 + r() * 0.5;
-    const g = instancedModel(name, sizes[name] ?? 8, list, { by: 'y' });
+    const g = instancedModel(name, sizes[name] ?? 8, list, { by: 'y', shadow: quality !== 'low' });
     windify(g, 10, 0.18, (mt) => /Leaves|Green/i.test(mt.name));
     root.add(g);
   }
@@ -220,7 +220,9 @@ export function buildNature(quality: 'low' | 'medium' | 'high') {
       continue;
     }
     const flat = /petal|clover|rock/.test(name);
-    const g = instancedModel(name, dsize[name] ?? 1, list, { shadow: /rock|bush/.test(name), by: flat ? 'max' : 'y' });
+    // на слаби телефони: по-малко тежки храсти и без сенки от дребната украса
+    const use = quality === 'low' && /bush_flowers|clover|grass_tall/.test(name) ? list.filter((_, i) => i % 2 === 0) : list;
+    const g = instancedModel(name, dsize[name] ?? 1, use, { shadow: quality !== 'low' && /rock|bush/.test(name), by: flat ? 'max' : 'y' });
     if (!/rock/.test(name)) windify(g, 1.2, 0.08);
     root.add(g);
   }

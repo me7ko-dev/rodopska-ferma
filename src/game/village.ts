@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { VILLAGE_HOUSES } from './data';
+import { QUALITY } from '../engine/engine';
 import { S, save, spend, addCoins, addXP, now } from './state';
 import { VILLAGE_PLOTS, ROAD_Z, ROAD_W, roadZAt, heightAt } from '../world/layout';
 import { instance, animationsOf } from '../engine/assets';
@@ -49,6 +50,7 @@ export class Village {
       const owned = !!S.village[i];
       const house = instance(h.model, h.size);
       house.rotation.y = pl.rot;
+      if (QUALITY.value === 'low') house.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = false; });
       g.add(house);
       if (!owned) {
         // къща за продан: малко посивяла + табела

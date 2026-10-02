@@ -15,6 +15,9 @@ function detectQuality(): Quality {
 
 export type Updater = (dt: number, t: number) => void;
 
+/** Текущото качество (за модули, които нямат достъп до Engine). */
+export const QUALITY: { value: Quality } = { value: 'high' };
+
 /** Рендерер, сцена, светлини и главният цикъл. */
 export class Engine {
   renderer: THREE.WebGLRenderer;
@@ -31,6 +34,7 @@ export class Engine {
 
   constructor(public canvas: HTMLCanvasElement) {
     this.quality = detectQuality();
+    QUALITY.value = this.quality;
     const r = new THREE.WebGLRenderer({ canvas, antialias: this.quality !== 'low', powerPreference: 'high-performance', stencil: false });
     this.renderer = r;
     r.outputColorSpace = THREE.SRGBColorSpace;
