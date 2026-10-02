@@ -14,6 +14,7 @@ export interface Entity {
   queue?: QueueItem[];
   done?: { out: string; qty: number }[];
   animals?: AnimalState[];
+  extra?: number; // допълнителни места в опашката на работилница
 }
 
 export interface Order {
@@ -38,7 +39,7 @@ export interface Save {
   lands: string[];
   home: number;
   cars: string[];
-  village: Record<number, { bought: number; last: number }>;
+  village: Record<number, { bought: number; last: number; up?: number }>;
   orders: Order[];
   nextOrder: number;
   barnCap: number;
@@ -47,10 +48,12 @@ export interface Save {
   tut: number;
   sound: boolean;
   music: boolean;
-  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number };
+  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number; helps?: number; traded?: number };
   ach: Record<string, number>;
   created: number;
   last: number;
+  owner?: number; // чий профил е тази ферма (онлайн)
+  cloudRev?: number; // последната версия, качена в облака
 }
 
 type Listener = (what: string) => void;
@@ -59,6 +62,11 @@ export const on = (f: Listener) => listeners.push(f);
 export const emit = (what: string) => listeners.forEach((f) => f(what));
 
 const KEY = 'rf-save-v1';
+
+/** Гостуване във ферма на приятел (?gost=име): нищо не се записва, фермата идва от сървъра. */
+export const VISIT = new URLSearchParams(location.search).get('gost')?.trim() || '';
+/** Брояч на записите — по него онлайн частта разбира, че има нещо ново за качване. */
+export let saveCount = 0;
 
 export function now() {
   return Date.now();
@@ -88,7 +96,7 @@ export function freshSave(): Save {
     tut: 0,
     sound: true,
     music: true,
-    stats: { harvested: 0, produced: 0, orders: 0, earned: 0, visitors: 0 },
+    stats: { harvested: 0, produced: 0, orders: 0, earned: 0, visitors: 0, helps: 0, traded: 0 },
     ach: {},
     created: t,
     last: t,
@@ -98,11 +106,12 @@ export function freshSave(): Save {
 export let S: Save = load();
 
 function load(): Save {
+  if (VISIT) return freshSave();
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      if (s && s.v === 1) return { ...freshSave(), ...s };
+      if (s && s.v === 1) { const f = freshSave(); return { ...f, ...s, stats: { ...f.stats, ...s.stats } }; }
     }
   } catch (e) {
     console.warn('save', e);
@@ -111,7 +120,15 @@ function load(): Save {
 }
 
 let saveTimer = 0;
+let frozen = false;
+/** Спира записа (преди презареждане със свалена от облака ферма — да не я презапишем). */
+export function freezeSave() {
+  frozen = true;
+  clearTimeout(saveTimer);
+}
 export function save(immediate = false) {
+  if (VISIT || frozen) return;
+  saveCount++;
   S.last = now();
   const write = () => {
     try {
@@ -126,6 +143,16 @@ export function save(immediate = false) {
 }
 addEventListener('beforeunload', () => save(true));
 document.addEventListener('visibilitychange', () => document.hidden && save(true));
+
+/** Подменя цялата игра (при гостуване или при сваляне от облака). */
+export function setS(next: Save) {
+  const f = freshSave();
+  S = { ...f, ...next, stats: { ...f.stats, ...(next.stats || {}) } };
+}
+/** Записва дадена игра директно (без да я зарежда) — напр. свалена от облака преди презареждане. */
+export function writeSave(s: Save) {
+  localStorage.setItem(KEY, JSON.stringify(s));
+}
 
 export function resetSave() {
   localStorage.removeItem(KEY);

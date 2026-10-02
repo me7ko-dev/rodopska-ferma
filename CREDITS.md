@@ -12,6 +12,7 @@
 | Duck (duck) | Poly by Google | https://poly.pizza/m/6HpauUCfIAb |
 | Goat (goat1) | Poly by Google | https://poly.pizza/m/d7dImmjtF8E |
 | Goat (goat2) | Poly by Google | https://poly.pizza/m/bNYS7ETDNCt |
+| Goose (goose) | Poly by Google | https://poly.pizza/m/9wn3If7Qgb4 |
 | Hen (hen) | Poly by Google | https://poly.pizza/m/8Unya0rw9tR |
 | Mallard duck (mallard) | Poly by Google | https://poly.pizza/m/frSLi6b6Vid |
 | Rooster (rooster) | Poly by Google | https://poly.pizza/m/6NTegstc5Jy |
@@ -26,6 +27,10 @@
 | Модел | Автор | Линк |
 |---|---|---|
 | Alpaca (alpaca) | Quaternius | https://poly.pizza/m/bCVFD48i2l |
+| Building (b_kay1) | Kay Lousberg | https://poly.pizza/m/qOhhGLftam |
+| Building (b_kay2) | Kay Lousberg | https://poly.pizza/m/EL3ePInr1N |
+| Building (b_quat) | Quaternius | https://poly.pizza/m/ZSYgIuHfYb |
+| Big Building (b_quat_big) | Quaternius | https://poly.pizza/m/AVCS8jUd2l |
 | Bag (bag) | Quaternius | https://poly.pizza/m/VRfAODZ0Xk |
 | Bag Open (bag_open) | Quaternius | https://poly.pizza/m/rJuZexcuhU |
 | Bags (bags) | Quaternius | https://poly.pizza/m/gzvyAQ797z |
@@ -54,6 +59,7 @@
 | Taxi (car_taxi) | Quaternius | https://poly.pizza/m/x43lOScTpN |
 | Truck (car_truck) | Quaternius | https://poly.pizza/m/cXw6oiFtZ8 |
 | Cart (cart) | Quaternius | https://poly.pizza/m/l7bDe7ak6j |
+| Castle (castle) | Quaternius | https://poly.pizza/m/opTOmcN3o9 |
 | ChickenCoop (coop) | Quaternius | https://poly.pizza/m/DM0F8siLam |
 | Cow (cow) | Quaternius | https://poly.pizza/m/26zM1outCr |
 | Cow (cow2) | Quaternius | https://poly.pizza/m/5XSc2Fka3F |
@@ -62,9 +68,11 @@
 | Husky (dog_husky) | Quaternius | https://poly.pizza/m/wcWiuEqwzq |
 | Shiba Inu (dog_shiba) | Quaternius | https://poly.pizza/m/y4wdQpg767 |
 | Donkey (donkey) | Quaternius | https://poly.pizza/m/qmX6nhnvp7 |
+| Farm (farm_q) | Quaternius | https://poly.pizza/m/91wMLb9kKo |
 | Fence (fence_med) | Quaternius | https://poly.pizza/m/UXmKfG81fG |
 | Fence (fence_rail) | Quaternius | https://poly.pizza/m/e02PFKKhbr |
 | Fence (fence_white) | Quaternius | https://poly.pizza/m/U7g0Wxpt63 |
+| Fish (fish) | Quaternius | https://poly.pizza/m/XWl86YFtpF |
 | Fountain (fountain) | Isa Lousberg | https://poly.pizza/m/WHc7dwttlk |
 | Fox (fox) | Quaternius | https://poly.pizza/m/Bc97C66HKi |
 | Gazebo (gazebo) | Quaternius | https://poly.pizza/m/xYZB1TmGMv |
@@ -81,8 +89,12 @@
 | House (house_toy) | Isa Lousberg | https://poly.pizza/m/jFBoxLuAXY |
 | House (house_white) | Quaternius | https://poly.pizza/m/roqiHdrpgc |
 | House (house_wood) | Quaternius | https://poly.pizza/m/L7h0SjZX2K |
+| Houses (houses_q) | Quaternius | https://poly.pizza/m/vCoDG5hFyI |
 | Hut (hut) | Quaternius | https://poly.pizza/m/4MJWbyd6vw |
+| Hut (hut2) | Quaternius | https://poly.pizza/m/wxi3kAu5ey |
+| Hut (hut3) | Quaternius | https://poly.pizza/m/I0IzdnH2iN |
 | Fantasy Inn (inn) | Quaternius | https://poly.pizza/m/x3ZcGn3jr4 |
+| Small Building (k_small) | Kenney | https://poly.pizza/m/gyjF60t7CG |
 | Lilypad (lilypad) | Quaternius | https://poly.pizza/m/TI6ukUlsLh |
 | Llama (llama) | Quaternius | https://poly.pizza/m/JxVJ9rfWGy |
 | Adventurer (m_adventurer) | Quaternius | https://poly.pizza/m/5EGWBMpuXq |
@@ -149,6 +161,7 @@
 | Tree (n_tree4) | Quaternius | https://poly.pizza/m/qZtx0AHhcy |
 | Tree (n_tree5) | Quaternius | https://poly.pizza/m/t9KbsfYdXz |
 | Package (package) | Quaternius | https://poly.pizza/m/kYvD6QCQRd |
+| Pig (pig) | Quaternius | https://poly.pizza/m/TNvG3QUFlp |
 | Fantasy Sawmill (sawmill) | Quaternius | https://poly.pizza/m/alxTTFjKDM |
 | Scythe (scythe) | Quaternius | https://poly.pizza/m/yE9TKCewO8 |
 | Sheep (sheep) | Quaternius | https://poly.pizza/m/C39AUXUUes |
@@ -158,6 +171,9 @@
 | Silo House (silo_house) | Quaternius | https://poly.pizza/m/ZgstejsAcN |
 | Fantasy Stable (stable) | Quaternius | https://poly.pizza/m/qhNQSOGGbi |
 | Stag (stag) | Quaternius | https://poly.pizza/m/tQdzbZ1Cmw |
+| Market Stalls Compact (stalls) | Quaternius | https://poly.pizza/m/fmHUuX9AS3 |
+| Structure (structure) | Quaternius | https://poly.pizza/m/ilWoURnbZW |
+| Tent (tent) | Quaternius | https://poly.pizza/m/5Q7qIrfDxA |
 | Town House (townhouse1) | Quaternius | https://poly.pizza/m/imVkxz7oZD |
 | Town House (townhouse2) | Quaternius | https://poly.pizza/m/sDQJBImZuw |
 | Tree (tree_a) | Quaternius | https://poly.pizza/m/aVOxaHRPWe |
@@ -171,6 +187,7 @@
 | Water Tank (water_tank) | Quaternius | https://poly.pizza/m/XVB8vUbnZb |
 | Well (well) | Quaternius | https://poly.pizza/m/QlqncKYxXb |
 | Tower Windmill (windmill) | Quaternius | https://poly.pizza/m/52yaPyaAAG |
+| Windmill (windmill2) | Quaternius | https://poly.pizza/m/WUbU1Nct2W |
 | Woman Casual (woman_casual) | Quaternius | https://poly.pizza/m/jpKRgGDxhk |
 | Woman in Dress (woman_dress) | Quaternius | https://poly.pizza/m/zMyPlQXBzq |
 | Woman in Tank Top (woman_tank) | Quaternius | https://poly.pizza/m/XqzeZGB7iU |

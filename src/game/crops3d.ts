@@ -243,6 +243,149 @@ const plants: Record<string, (stage: number, r: () => number) => Part[]> = {
     }
     return parts;
   },
+  onion(st, r) {
+    const parts: Part[] = [];
+    const h = [0.2, 0.38, 0.52, 0.5][st];
+    for (const [x, z] of grid(4, 5, 0.08, r)) {
+      for (let i = 0; i < 4; i++) parts.push({ geo: place(P.cyl(0.018, h * (0.8 + r() * 0.4), 4), x, 0.04, z, (r() - 0.5) * 0.5, 0, (r() - 0.5) * 0.5), color: i % 2 ? '#6fae4a' : '#5c9c3c' });
+      if (st >= 2) parts.push({ geo: place(P.sph(st === 3 ? 0.11 : 0.07, 8, 6), x, 0.07, z, 0, 0, 0, [1, 0.85, 1]), color: st === 3 ? '#d9a35a' : '#e8d9b0' });
+    }
+    return parts;
+  },
+  garlic(st, r) {
+    const parts: Part[] = [];
+    const h = [0.22, 0.4, 0.55, 0.55][st];
+    for (const [x, z] of grid(4, 5, 0.08, r)) {
+      for (let i = 0; i < 5; i++) parts.push({ geo: place(leafGeo(h * (0.8 + r() * 0.3), 0.035, 0.5), x, 0.04, z, 0.25, (i / 5) * 6.28 + r(), 0), color: i % 2 ? '#8db86a' : '#7aa95a', side: true });
+      if (st >= 2) parts.push({ geo: place(P.sph(st === 3 ? 0.1 : 0.06, 8, 6), x, 0.06, z, 0, 0, 0, [1, 0.9, 1]), color: '#f4efe2' });
+    }
+    return parts;
+  },
+  cucumber(st, r) {
+    const parts: Part[] = [];
+    const h = [0.3, 0.75, 1.25, 1.35][st];
+    for (const [x, z] of grid(3, 3, 0.05, r)) {
+      if (st >= 1) {
+        parts.push({ geo: place(P.cyl(0.03, 1.5, 4), x - 0.2, 0, z, 0, 0, 0.12), color: '#a07c4e' });
+        parts.push({ geo: place(P.cyl(0.03, 1.5, 4), x + 0.2, 0, z, 0, 0, -0.12), color: '#a07c4e' });
+      }
+      const n = Math.round(h * 8);
+      for (let i = 0; i < n; i++) {
+        const y = 0.12 + (i / n) * h, a = i * 2.2;
+        parts.push({ geo: place(leafGeo(0.26, 0.17, 0.4), x + Math.cos(a) * 0.1, y, z + Math.sin(a) * 0.1, 0.9, a, 0), color: i % 2 ? '#4f9a33' : '#5fae3c', side: true });
+        if (st === 2 && i % 3 === 0) parts.push({ geo: place(P.sph(0.045, 5, 4), x + Math.cos(a) * 0.2, y, z + Math.sin(a) * 0.2), color: '#ffd84a' });
+        if (st === 3 && i % 2 === 0) parts.push({ geo: place(P.sph(0.05, 6, 5), x + Math.cos(a + 1) * 0.2, y - 0.1, z + Math.sin(a + 1) * 0.2, 0, 0, 0.2, [1, 3.6, 1]), color: '#3f7f2a' });
+      }
+    }
+    return parts;
+  },
+  raspberry(st, r) {
+    const parts: Part[] = [];
+    const s = [0.16, 0.3, 0.42, 0.46][st];
+    for (const [x, z] of grid(2, 3, 0.08, r)) {
+      for (let i = 0; i < 9; i++) parts.push({ geo: place(P.ico(s * 0.45, 1), x + (r() - 0.5) * s * 1.3, s * 0.5 + r() * s * 1.1, z + (r() - 0.5) * s * 1.3, r(), r(), r()), color: i % 2 ? '#4f9a33' : '#62a83f' });
+      if (st === 2) for (let i = 0; i < 6; i++) parts.push({ geo: place(P.sph(0.04, 5, 4), x + (r() - 0.5) * s * 1.5, s * 0.6 + r() * s, z + (r() - 0.5) * s * 1.5), color: '#ffffff' });
+      if (st === 3) for (let i = 0; i < 12; i++) parts.push({ geo: place(P.ico(0.055, 1), x + (r() - 0.5) * s * 1.6, s * 0.5 + r() * s * 1.1, z + (r() - 0.5) * s * 1.6), color: i % 3 ? '#d7263d' : '#b5172e' });
+    }
+    return parts;
+  },
+  blueberry(st, r) {
+    const parts: Part[] = [];
+    const s = [0.14, 0.26, 0.36, 0.38][st];
+    for (const [x, z] of grid(3, 3, 0.08, r)) {
+      for (let i = 0; i < 7; i++) parts.push({ geo: place(P.ico(s * 0.42, 1), x + (r() - 0.5) * s * 1.2, s * 0.45 + r() * s * 0.6, z + (r() - 0.5) * s * 1.2, r(), r(), r()), color: i % 2 ? '#3f7f3a' : '#4d8f42' });
+      if (st >= 2) for (let i = 0; i < 10; i++) parts.push({ geo: place(P.sph(0.045, 6, 5), x + (r() - 0.5) * s * 1.4, s * 0.5 + r() * s * 0.7, z + (r() - 0.5) * s * 1.4), color: st === 3 ? (i % 3 ? '#3b4fa8' : '#2c3a85') : '#9cbf7a' });
+    }
+    return parts;
+  },
+  watermelon(st, r) {
+    const parts: Part[] = [];
+    for (const [x, z] of grid(4, 4, 0.2, r)) parts.push({ geo: place(P.ico([0.12, 0.18, 0.2, 0.2][st], 1), x, 0.08, z, r(), r(), r(), [1.3, 0.45, 1.3]), color: r() < 0.5 ? '#4f9a33' : '#5fae3c' });
+    if (st >= 2)
+      for (const [x, z] of grid(2, 2, 0.25, r)) {
+        const s = st === 3 ? 0.36 : 0.18;
+        const ry = r() * 3;
+        parts.push({ geo: place(P.sph(s, 14, 10), x, s * 0.75, z, 0, ry, 0, [1.25, 0.9, 1]), color: '#57a83c' });
+        // тъмни ивици по динята
+        for (let k = 0; k < 8; k++) parts.push({ geo: place(new THREE.TorusGeometry(s * 1.01, s * 0.11, 4, 16, Math.PI), x, s * 0.75, z, 0, ry + (k / 8) * Math.PI, Math.PI / 2, [1.25, 0.9, 1]), color: '#1f5a1f' });
+      }
+    return parts;
+  },
+  melon(st, r) {
+    const parts: Part[] = [];
+    for (const [x, z] of grid(4, 4, 0.2, r)) parts.push({ geo: place(P.ico([0.14, 0.22, 0.27, 0.27][st], 1), x, 0.1, z, r(), r(), r(), [1.3, 0.5, 1.3]), color: r() < 0.5 ? '#5a9e38' : '#6fb446' });
+    if (st >= 2)
+      for (const [x, z] of grid(2, 3, 0.2, r)) {
+        const s = st === 3 ? 0.25 : 0.13;
+        parts.push({ geo: place(P.sph(s, 10, 8), x, s * 0.8, z, 0, r() * 3, 0, [1.2, 0.95, 1]), color: st === 3 ? '#e8c45a' : '#b9cf6a' });
+      }
+    return parts;
+  },
+  eggplant(st, r) {
+    const parts: Part[] = [];
+    const s = [0.18, 0.34, 0.48, 0.52][st];
+    for (const [x, z] of grid(3, 3, 0.05, r)) {
+      for (let i = 0; i < 6; i++) parts.push({ geo: place(leafGeo(s * 1.1, s * 0.45, 0.4), x, s * 0.25 + i * s * 0.12, z, 0.8, i * 1.9 + r(), 0), color: i % 2 ? '#4f8a33' : '#5d9c3c', side: true });
+      parts.push({ geo: place(P.cyl(0.03, s * 1.2, 4), x, 0, z), color: '#6b5a3a' });
+      if (st >= 2) for (let i = 0; i < 4; i++) {
+        const a = r() * 6.28;
+        parts.push({ geo: place(P.sph(0.07, 8, 6), x + Math.cos(a) * s * 0.4, s * 0.45, z + Math.sin(a) * s * 0.4, 0, 0, 0.25, [1, st === 3 ? 2.6 : 1.6, 1]), color: st === 3 ? '#4b1f5c' : '#7a5aa0' });
+      }
+    }
+    return parts;
+  },
+  rose(st, r) {
+    const parts: Part[] = [];
+    const s = [0.18, 0.32, 0.46, 0.5][st];
+    for (const [x, z] of grid(2, 3, 0.06, r)) {
+      for (let i = 0; i < 9; i++) parts.push({ geo: place(P.ico(s * 0.4, 1), x + (r() - 0.5) * s * 1.2, s * 0.5 + r() * s * 1.0, z + (r() - 0.5) * s * 1.2, r(), r(), r()), color: i % 2 ? '#3f7f2a' : '#4f9a33' });
+      if (st >= 2)
+        for (let i = 0; i < (st === 3 ? 9 : 5); i++) {
+          const px = x + (r() - 0.5) * s * 1.4, py = s * 0.9 + r() * s * 0.8, pz = z + (r() - 0.5) * s * 1.4;
+          const c = st === 3 ? (i % 3 ? '#e2457a' : '#c92a5e') : '#7fae5a';
+          parts.push({ geo: place(P.sph(st === 3 ? 0.08 : 0.045, 8, 6), px, py, pz, 0, 0, 0, [1, 0.8, 1]), color: c });
+          if (st === 3) parts.push({ geo: place(P.sph(0.05, 6, 5), px, py + 0.04, pz), color: '#f06a98' });
+        }
+    }
+    return parts;
+  },
+  mint(st, r) {
+    const parts: Part[] = [];
+    const s = [0.16, 0.26, 0.36, 0.4][st];
+    for (const [x, z] of grid(4, 5, 0.08, r)) {
+      for (let i = 0; i < 8; i++) parts.push({ geo: place(leafGeo(s * 0.9, s * 0.42, 0.35), x, s * 0.15 + i * s * 0.11, z, 0.7, i * 2.1 + r(), 0), color: i % 2 ? '#6cc26a' : '#58b05a', side: true });
+      if (st === 3) parts.push({ geo: place(P.cone(0.035, 0.14, 5), x, s * 1.1, z), color: '#c8a8e8' });
+    }
+    return parts;
+  },
+  mushroom(st, r) {
+    const parts: Part[] = [];
+    for (const [x, z] of grid(4, 4, 0.25, r)) {
+      if (r() < 0.25 && st < 3) continue;
+      const k = [0.3, 0.55, 0.85, 1.1][st] * (0.8 + r() * 0.4);
+      parts.push({ geo: place(P.cyl(0.05 * k + 0.012, 0.32 * k, 6), x, 0, z), color: '#f2ead8' });
+      parts.push({ geo: place(new THREE.SphereGeometry(0.17 * k, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), x, 0.3 * k, z, 0, 0, 0, [1, 0.8, 1]), color: r() < 0.5 ? '#8a5a32' : '#b07a42' });
+      parts.push({ geo: place(P.cyl(0.165 * k, 0.02, 10), x, 0.29 * k, z), color: '#e8dcc4' });
+    }
+    // мъх и листа по земята
+    for (const [x, z] of grid(3, 3, 0.4, r)) parts.push({ geo: place(P.ico(0.16, 1), x, 0.02, z, 0, r(), 0, [1.4, 0.25, 1.4]), color: '#5a7f3a' });
+    return parts;
+  },
+  saffron(st, r) {
+    const parts: Part[] = [];
+    const h = [0.16, 0.28, 0.38, 0.38][st];
+    for (const [x, z] of grid(4, 5, 0.08, r)) {
+      for (let i = 0; i < 6; i++) parts.push({ geo: place(leafGeo(h * (0.9 + r() * 0.3), 0.025, 0.4), x, 0.03, z, 0.3, (i / 6) * 6.28 + r(), 0), color: i % 2 ? '#5d9c3c' : '#6fae4a', side: true });
+      if (st >= 2)
+        for (let i = 0; i < 6; i++) {
+          const g = leafGeo(0.18, 0.07, -0.2).rotateX(-0.5).rotateY((i / 6) * 6.28);
+          g.translate(x, h * 0.75, z);
+          parts.push({ geo: g, color: st === 3 ? '#9a6ad8' : '#c2b0d8', side: true });
+        }
+      if (st === 3) parts.push({ geo: place(P.cyl(0.012, 0.1, 3), x, h * 0.78, z), color: '#e8401c' });
+    }
+    return parts;
+  },
 };
 
 const cache = new Map<string, THREE.Group>();

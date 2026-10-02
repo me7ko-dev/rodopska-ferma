@@ -15,7 +15,9 @@ import { buildPond } from './world/water';
 import { buildNature } from './world/nature';
 import { POND, FARM, DRIVE, STATIONS, RAIL_Z } from './world/layout';
 import { fence } from './game/props';
-import { S, save, now, addXP, addCoins } from './game/state';
+import { S, save, now, addXP, addCoins, VISIT } from './game/state';
+import { startOnline, loadVisit, goHome } from './online/online';
+import { visitHUD } from './ui/social';
 import { BUILDINGS, HOME_TIERS, VILLAGE_HOUSES, ANIMALS, CARS } from './game/data';
 import { Farm } from './game/world';
 import { Village } from './game/village';
@@ -101,6 +103,20 @@ async function boot() {
   const sky = buildSky(engine.scene);
   const scene = engine.scene;
 
+  // на гости: фермата идва от сървъра
+  let visitInfo: Awaited<ReturnType<typeof loadVisit>> | null = null;
+  if (VISIT) {
+    document.querySelector('.load-sub')!.textContent = `Отиваме на гости при ${VISIT}…`;
+    try {
+      visitInfo = await loadVisit();
+    } catch (e) {
+      const sub = document.querySelector('.load-sub')!;
+      sub.innerHTML = `${(e as Error).message}<br><br><button class="btn" id="go-home">🏠 Към моята ферма</button>`;
+      document.getElementById('go-home')!.onclick = goHome;
+      return;
+    }
+  }
+
   // модели на сградите, които има на фермата
   const need = new Set(PRELOAD);
   for (const e of S.entities) {
@@ -140,10 +156,10 @@ async function boot() {
 
   const farm = new Farm(scene, engine.camera, rig);
   rig.input = farm;
-  if (!S.entities.length) newFarm(farm);
+  if (!S.entities.length && !VISIT) newFarm(farm);
   else farm.load();
   farm.buildLands();
-  refillOrders();
+  if (!VISIT) refillOrders();
   // дървена ограда около цялата ферма, с вход откъм пътя
   const fw = FARM.maxX - FARM.minX + 1.6, fd = FARM.maxZ - FARM.minZ + 1.6;
   const farmFence = fence(fw, fd, '#a0703f', DRIVE.w + 1.5, DRIVE.x - (FARM.minX + FARM.maxX) / 2);
@@ -154,6 +170,8 @@ async function boot() {
   const vehicles = new Vehicles(scene, farm, rig);
   const people = new People(scene, farm);
   bindUI({ farm, village, vehicles, people, engine });
+  if (visitInfo) visitHUD(visitInfo);
+  else startOnline(farm);
   const ambient = new Ambient(scene, farm, engine);
   const daynight = new DayNight(engine, sky, scene);
   bindDayNight(daynight);
@@ -215,7 +233,7 @@ async function boot() {
     updateMarkers();
     engine.followShadow(rig.target, Math.min(90, rig.distance * 0.95));
     // поръчките се попълват от само себе си
-    if (performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); }
+    if (!VISIT && performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); }
   });
   engine.start();
   // останалите модели (сгради за купуване, коли, къщи) — тихо във фонов режим
@@ -226,7 +244,7 @@ async function boot() {
     for (const h of HOME_TIERS) rest.add(h.model);
     loadAll([...rest]);
   }, 3000);
-  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, ready: true };
+  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);

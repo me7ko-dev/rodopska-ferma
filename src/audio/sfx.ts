@@ -59,7 +59,7 @@ function noise(dur: number, vol = 0.15, filter = 2000, when = 0, q = 1) {
   src.start(t);
 }
 
-export type Sfx = 'tap' | 'coin' | 'harvest' | 'plant' | 'levelup' | 'error' | 'pop' | 'build' | 'cluck' | 'moo' | 'baa' | 'buzz' | 'truck' | 'whistle' | 'open' | 'close' | 'collect';
+export type Sfx = 'tap' | 'coin' | 'harvest' | 'plant' | 'levelup' | 'error' | 'pop' | 'build' | 'cluck' | 'moo' | 'baa' | 'buzz' | 'truck' | 'whistle' | 'open' | 'close' | 'collect' | 'quack' | 'oink' | 'splash' | 'heart';
 
 export function sfx(name: Sfx) {
   if (!S.sound) return;
@@ -88,6 +88,10 @@ export function sfx(name: Sfx) {
           noise(w ? 1.1 : 0.45, 0.05, 2600, w, 3);
         }
         break;
+      case 'quack': for (let i = 0; i < 2; i++) { tone(520, 0.12, 'sawtooth', 0.05, i * 0.16, 0.7); noise(0.1, 0.06, 900, i * 0.16, 3); } break;
+      case 'oink': for (let i = 0; i < 2; i++) { tone(260, 0.14, 'sawtooth', 0.06, i * 0.18, 0.8); noise(0.12, 0.1, 500, i * 0.18, 2); } break;
+      case 'splash': noise(0.35, 0.22, 1400, 0, 0.6); noise(0.2, 0.12, 3000, 0.08, 0.8); break;
+      case 'heart': [660, 880, 1100].forEach((f, i) => tone(f, 0.18, 'sine', 0.1, i * 0.08)); break;
     }
   } catch {}
 }

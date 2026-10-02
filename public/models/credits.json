@@ -1139,5 +1139,124 @@
   "creator": "Quaternius",
   "licence": "CC0 1.0",
   "url": "https://poly.pizza/m/xH5gNlQxAZ"
+ },
+ "pig": {
+  "id": "TNvG3QUFlp",
+  "title": "Pig",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/TNvG3QUFlp"
+ },
+ "castle": {
+  "id": "opTOmcN3o9",
+  "title": "Castle",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/opTOmcN3o9"
+ },
+ "fish": {
+  "id": "XWl86YFtpF",
+  "title": "Fish",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/XWl86YFtpF"
+ },
+ "goose": {
+  "id": "9wn3If7Qgb4",
+  "title": "Goose",
+  "creator": "Poly by Google",
+  "licence": "CC-BY 3.0",
+  "url": "https://poly.pizza/m/9wn3If7Qgb4"
+ },
+ "b_kay1": {
+  "id": "qOhhGLftam",
+  "title": "Building",
+  "creator": "Kay Lousberg",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/qOhhGLftam"
+ },
+ "b_kay2": {
+  "id": "EL3ePInr1N",
+  "title": "Building",
+  "creator": "Kay Lousberg",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/EL3ePInr1N"
+ },
+ "b_quat_big": {
+  "id": "AVCS8jUd2l",
+  "title": "Big Building",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/AVCS8jUd2l"
+ },
+ "b_quat": {
+  "id": "ZSYgIuHfYb",
+  "title": "Building",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/ZSYgIuHfYb"
+ },
+ "windmill2": {
+  "id": "WUbU1Nct2W",
+  "title": "Windmill",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/WUbU1Nct2W"
+ },
+ "hut2": {
+  "id": "wxi3kAu5ey",
+  "title": "Hut",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/wxi3kAu5ey"
+ },
+ "hut3": {
+  "id": "I0IzdnH2iN",
+  "title": "Hut",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/I0IzdnH2iN"
+ },
+ "farm_q": {
+  "id": "91wMLb9kKo",
+  "title": "Farm",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/91wMLb9kKo"
+ },
+ "houses_q": {
+  "id": "vCoDG5hFyI",
+  "title": "Houses",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/vCoDG5hFyI"
+ },
+ "stalls": {
+  "id": "fmHUuX9AS3",
+  "title": "Market Stalls Compact",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/fmHUuX9AS3"
+ },
+ "structure": {
+  "id": "ilWoURnbZW",
+  "title": "Structure",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/ilWoURnbZW"
+ },
+ "k_small": {
+  "id": "gyjF60t7CG",
+  "title": "Small Building",
+  "creator": "Kenney",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/gyjF60t7CG"
+ },
+ "tent": {
+  "id": "5Q7qIrfDxA",
+  "title": "Tent",
+  "creator": "Quaternius",
+  "licence": "CC0 1.0",
+  "url": "https://poly.pizza/m/5Q7qIrfDxA"
  }
 }

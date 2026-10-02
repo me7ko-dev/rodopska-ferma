@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { instance, animationsOf } from '../engine/assets';
 import { ITEMS, CARS } from './data';
-import { S, save, takeAll, addCoins, addXP, count } from './state';
+import { S, save, takeAll, addCoins, addXP, count, VISIT } from './state';
 import { makeable } from './orders';
 import { DRIVE, ROAD_Z, FARM } from '../world/layout';
 import { marker, removeMarker, flyTo, type Marker } from './fx';
@@ -165,7 +165,7 @@ export class People {
       if (this.farmerWait <= 0) { this.farmerWait = 3 + Math.random() * 6; this.farmerThink(); }
     }
     // посетители
-    if (this.farm.byType('board').length) {
+    if (!VISIT && this.farm.byType('board').length) {
       this.nextVisitor -= dt;
       if (this.nextVisitor <= 0 && this.visitors.length < 3 && S.level >= 2) {
         this.nextVisitor = 70 + Math.random() * 110;

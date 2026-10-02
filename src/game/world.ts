@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BUILDINGS, CROPS, ITEMS, TREES, ANIMALS, LANDS, START_LAND, HOME_TIERS, type BuildingDef, type Recipe } from './data';
-import { S, save, addItem, addXP, addCoins, spend, emit, now, spaceFor, isSiloItem, takeAll, count, LAND_RECT, type Entity } from './state';
+import { S, save, addItem, addXP, addCoins, spend, emit, now, spaceFor, isSiloItem, takeAll, count, LAND_RECT, VISIT, type Entity } from './state';
 import { instance, animationsOf, has, loadModel } from '../engine/assets';
 import { cropMesh, soilMesh } from './crops3d';
 import { fence, yard, trough, beehive, orderBoard, overgrowth, saleSign } from './props';
@@ -10,9 +10,37 @@ import { UI } from '../ui/api';
 import { sfx } from '../audio/sfx';
 import { windify } from '../engine/wind';
 import { FARM } from '../world/layout';
+import { buildPond } from '../world/water';
 import type { CameraRig, GameInput, PointerInfo } from '../engine/camera';
 
 for (const l of LANDS) LAND_RECT[l.id] = l.rect;
+
+// мека сянка в основата на сградите (за да „стъпват“ на земята)
+let blobTex: THREE.CanvasTexture | null = null;
+const blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+let blobMat: THREE.MeshBasicMaterial | null = null;
+export function contactShadow(w: number, d: number, strength = 1) {
+  if (!blobTex) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 128;
+    const g = cv.getContext('2d')!;
+    const gr = g.createRadialGradient(64, 64, 10, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(0,0,0,0.55)');
+    gr.addColorStop(0.55, 'rgba(0,0,0,0.32)');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 128, 128);
+    blobTex = new THREE.CanvasTexture(cv);
+    blobMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, color: 0x1a2a10, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+  }
+  const m = new THREE.Mesh(blobGeo, strength === 1 ? blobMat! : blobMat!.clone());
+  if (strength !== 1) (m.material as THREE.MeshBasicMaterial).opacity = strength;
+  m.scale.set(w, 1, d);
+  m.position.y = 0.04;
+  m.renderOrder = -3;
+  m.name = 'contact';
+  return m;
+}
 
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
@@ -41,6 +69,18 @@ export interface View {
 
 export function footprint(def: BuildingDef, rot: number): [number, number] {
   return rot % 2 ? [def.foot[1], def.foot[0]] : [def.foot[0], def.foot[1]];
+}
+
+/** Колко неща може да се правят наведнъж в работилница (с разширенията). */
+export function slotsOf(e: Entity) {
+  return (BUILDINGS[e.type].slots ?? 2) + (e.extra ?? 0);
+}
+export const MAX_EXTRA_SLOTS = 3;
+/** Цена на следващото място в опашката. */
+export function extraSlotCost(e: Entity) {
+  const n = e.extra ?? 0;
+  if (n >= MAX_EXTRA_SLOTS) return 0;
+  return Math.round((300 + BUILDINGS[e.type].price * 0.35) * Math.pow(2.2, n) / 50) * 50;
 }
 
 export function centerOf(e: Entity) {
@@ -152,6 +192,13 @@ export class Farm implements GameInput {
       case 'pet': v = new PetView(e, def, this); break;
       default: v = new BasicView(e, def, this);
     }
+    // мека сянка отдолу (без нивите, заградите и малката украса)
+    if (def.kind !== 'field' && def.kind !== 'animal') {
+      const [w, d] = def.foot;
+      const small = def.kind === 'deco' && w * d <= 4;
+      if (def.kind === 'pet') (v as unknown as { model: THREE.Object3D }).model.add(contactShadow(def.size * 0.9, def.size * 0.9, 0.8));
+      else if (!small) v.root.add(def.kind === 'tree' ? contactShadow(w * 1.1, d * 1.1) : contactShadow(w * 1.18, d * 1.18));
+    }
     this.positionView(v);
     this.group.add(v.root);
     this.proxies.push(v.proxy);
@@ -243,6 +290,7 @@ export class Farm implements GameInput {
   onDown(p: PointerInfo) {
     this.suppressTap = false;
     clearTimeout(this.longTimer);
+    if (VISIT) return false; // на гости само се разглежда и помага (с натискане)
     if (this.place) {
       const g = this.rig.groundAt(p.x, p.y);
       if (g) {
@@ -328,6 +376,7 @@ export class Farm implements GameInput {
       v.tap();
       return;
     }
+    if (VISIT) return;
     const ex = this.pickExtra(p.x, p.y);
     if (ex) { ex.tap(); return; }
     if (this.tool) { this.tool = null; UI.sowMode(null); }
@@ -461,6 +510,10 @@ export function previewModel(def: BuildingDef) {
   return g;
 }
 
+function animalSound(kind: string) {
+  return ({ cow: 'moo', buffalo: 'moo', sheep: 'baa', goat: 'baa', llama: 'baa', bee: 'buzz', duck: 'quack', pig: 'oink', fish: 'splash' } as const)[kind as 'cow'] ?? 'cluck';
+}
+
 function makeProxy(v: View, w: number, h: number, d: number) {
   const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), proxyMat);
   p.position.y = h / 2;
@@ -545,6 +598,7 @@ class FieldView implements View {
     return true;
   }
   tap() {
+    if (VISIT) { UI.visitTap(this); return; }
     if (this.isEmpty()) UI.openSeeds(this);
     else if (this.isReady()) this.harvest();
     else UI.fieldInfo(this);
@@ -593,8 +647,7 @@ class ProductionView implements View {
   }
   start(r: Recipe) {
     const q = this.e.queue!;
-    if (q.length + this.e.done!.length >= (this.def.slots ?? 2) + 1 && q.length >= (this.def.slots ?? 2)) { UI.toast('Опашката е пълна', 'warn'); return false; }
-    if (q.length >= (this.def.slots ?? 2)) { UI.toast('Опашката е пълна', 'warn'); return false; }
+    if (q.length >= slotsOf(this.e)) { UI.toast('Опашката е пълна', 'warn'); return false; }
     if (!takeAll(r.needs)) { UI.toast('Не ти стигат съставките', 'warn'); sfx('error'); return false; }
     const t = now();
     const startAt = q.length ? q[q.length - 1].end : t;
@@ -624,6 +677,7 @@ class ProductionView implements View {
     return got;
   }
   tap() {
+    if (VISIT) { UI.visitTap(this); return; }
     this.tick();
     if (this.e.done!.length && this.collect()) return;
     UI.openProduction(this);
@@ -695,6 +749,7 @@ class BasicView implements View {
     this.root.add(this.model);
   }
   tap() {
+    if (VISIT) { UI.visitTap(this); return; }
     sfx('tap');
     switch (this.def.id) {
       case 'house': UI.openHome(); break;
@@ -747,12 +802,27 @@ class PenView implements View {
   kind: string;
   house: THREE.Group | null = null;
   hungryMk: Marker;
+  pond: { x: number; z: number; rx: number; rz: number } | null = null;
   private soundT = 3 + Math.random() * 10;
   constructor(public e: Entity, public def: BuildingDef, public farm: Farm) {
     this.kind = def.animal!;
     const [w, d] = def.foot;
-    this.root.add(yard(w - 0.4, d - 0.4, this.kind === 'bee' ? '#8fbf5a' : '#c2a46a'));
-    this.root.add(fence(w - 0.6, d - 0.6));
+    this.root.add(yard(w - 0.4, d - 0.4, this.kind === 'bee' || this.kind === 'duck' ? '#8fbf5a' : this.kind === 'fish' ? '#9a9486' : '#c2a46a'));
+    if (this.kind !== 'fish') this.root.add(fence(w - 0.6, d - 0.6));
+    // вода: рибарникът е цял басейн, патиците имат езерце в двора
+    if (this.kind === 'fish') this.pond = { x: 0, z: 0, rx: w / 2 - 0.9, rz: d / 2 - 0.9 };
+    if (this.kind === 'duck') this.pond = { x: w / 4 - 0.4, z: 0.4, rx: w / 4 + 0.3, rz: d / 3 };
+    if (this.pond) {
+      const p = buildPond(this.pond.x, this.pond.z, this.pond.rx, this.pond.rz);
+      this.root.add(p);
+      const reeds = this.kind === 'fish' ? 6 : 3;
+      for (let i = 0; i < reeds; i++) {
+        const a = (i / reeds) * Math.PI * 2 + 0.4;
+        const o = instance(i % 2 ? 'n_plant_big2' : 'n_rock1', i % 2 ? 0.9 : 1.1);
+        o.position.set(this.pond.x + Math.cos(a) * (this.pond.rx + 0.9), 0, this.pond.z + Math.sin(a) * (this.pond.rz + 0.9));
+        this.root.add(o);
+      }
+    }
     if (this.kind === 'bee') {
       // кошерите са самите „животни“
       for (let i = 0; i < 6; i++) {
@@ -765,11 +835,16 @@ class PenView implements View {
       const hs = this.house.userData.size as THREE.Vector3;
       this.house.position.set(-w / 2 + hs.x / 2 + 0.5, 0, -d / 2 + hs.z / 2 + 0.5);
       this.root.add(this.house);
+      const cs = contactShadow(hs.x * 1.25, hs.z * 1.25);
+      cs.position.set(this.house.position.x, 0.045, this.house.position.z);
+      this.root.add(cs);
       this.height = hs.y;
     }
     this.trough = trough(false);
     this.trough.position.set(w / 2 - 1.6, 0, -d / 2 + 1.3);
+    if (this.kind === 'duck') this.trough.position.set(-w / 2 + 1.8, 0, d / 2 - 1.3);
     if (this.kind !== 'bee') this.root.add(this.trough);
+    if (this.kind === 'fish') { this.trough.visible = false; this.trough.position.set(w / 2 - 1, 0, -d / 2 + 0.5); }
     this.proxy = makeProxy(this, w, 2.2, d);
     this.root.add(this.proxy);
     this.hungryMk = marker(new THREE.Vector3(), '', 'mk bubble hungry');
@@ -802,8 +877,17 @@ class PenView implements View {
       const bee = instance('bee', 0.35);
       bee.name = 'bee';
       obj.add(bee);
+    } else if (this.kind === 'fish') {
+      obj = instance('fish', a.size);
+      const fishModel = obj;
+      if (animationsOf('fish').length) {
+        mixer = new THREE.AnimationMixer(fishModel);
+        const sw = animationsOf('fish')[0];
+        mixer.clipAction(sw).play();
+        mixer.update(Math.random());
+      }
     } else {
-      const model = this.kind === 'chicken' ? (i % 3 === 2 ? 'chicken' : 'hen') : a.model;
+      const model = this.kind === 'chicken' ? (i % 3 === 2 ? 'chicken' : 'hen') : this.kind === 'duck' ? (i % 2 ? 'mallard' : 'duck') : a.model;
       obj = instance(model, a.size);
       obj.position.copy(this.randomSpot());
       obj.rotation.y = Math.random() * 6.28;
@@ -864,7 +948,7 @@ class PenView implements View {
     }
     if (n) {
       popText(`Нахранени: ${n}`, this.root.position.clone().setY(2.5), '#fff');
-      sfx(this.kind === 'cow' ? 'moo' : this.kind === 'sheep' || this.kind === 'goat' ? 'baa' : 'cluck');
+      sfx(animalSound(this.kind));
       save();
     }
     return n;
@@ -879,11 +963,12 @@ class PenView implements View {
     this.spawnAnimal(this.e.animals!.length - 1);
     sparkle(this.root.position.clone().setY(1), 16);
     addXP(Math.max(2, Math.round(a.price / 25)));
-    sfx(this.kind === 'cow' ? 'moo' : this.kind === 'sheep' || this.kind === 'goat' ? 'baa' : this.kind === 'bee' ? 'buzz' : 'cluck');
+    sfx(animalSound(this.kind));
     save();
     return true;
   }
   tap() {
+    if (VISIT) { UI.visitTap(this); return; }
     if (this.collect()) return;
     const a = ANIMALS[this.kind];
     const hungry = this.e.animals!.filter((s) => s.fed == null).length;
@@ -901,6 +986,23 @@ class PenView implements View {
       an.mk.visible = ready;
       an.mk.pos.copy(this.root.localToWorld(an.obj.position.clone())).setY(this.kind === 'bee' ? 2.6 : a.size * 0.9 + 1.0);
       an.mixer?.update(dt);
+      if (this.kind === 'fish' && this.pond) {
+        // рибите плуват в кръг и понякога подскачат
+        an.phase += dt * (0.35 + (i % 3) * 0.08) * (i % 2 ? 1 : -1);
+        const rr = 0.35 + ((i * 37) % 10) / 20;
+        const fx = this.pond.x + Math.cos(an.phase) * this.pond.rx * rr, fz = this.pond.z + Math.sin(an.phase) * this.pond.rz * rr;
+        an.obj.position.set(fx, 0.06, fz);
+        an.obj.rotation.y = -an.phase + (i % 2 ? 0 : Math.PI);
+        an.wait -= dt;
+        if (an.wait < 0) { an.wait = 4 + Math.random() * 8; an.speed = 1; }
+        if (an.speed > 0) {
+          an.speed -= dt * 1.6;
+          const j = Math.max(0, Math.sin((1 - an.speed) * Math.PI));
+          an.obj.position.y = 0.06 + j * 0.7;
+          an.obj.rotation.z = (1 - an.speed) * Math.PI * 0.6 - 0.3;
+        } else an.obj.rotation.z = 0;
+        return;
+      }
       if (this.kind === 'bee') {
         const bee = an.obj.getObjectByName('bee');
         if (bee) {
@@ -930,6 +1032,10 @@ class PenView implements View {
           while (da > Math.PI) da -= Math.PI * 2;
           while (da < -Math.PI) da += Math.PI * 2;
           an.obj.rotation.y += da * Math.min(1, dt * 6);
+          if (this.kind === 'duck' && this.pond) {
+            const inW = Math.hypot((p.x - this.pond.x) / this.pond.rx, (p.z - this.pond.z) / this.pond.rz) < 0.92;
+            an.obj.position.y = inW ? 0.02 : 0;
+          }
           if (!an.mixer) {
             // без анимация: подрусване при ходене
             an.phase += dt * 12;
@@ -971,7 +1077,7 @@ class PenView implements View {
       this.soundT = 8 + Math.random() * 20;
       // звук само ако е близо до камерата
       const d = this.root.position.distanceTo(this.farm.rig.target);
-      if (d < 25 && this.animals.length) sfx(this.kind === 'cow' ? 'moo' : this.kind === 'sheep' || this.kind === 'goat' ? 'baa' : this.kind === 'bee' ? 'buzz' : 'cluck');
+      if (d < 25 && this.animals.length) sfx(animalSound(this.kind));
     }
   }
   dispose() {
@@ -996,7 +1102,7 @@ class TreeView implements View {
     this.root.add(m);
     this.height = def.size;
     // плодовете — топчета в короната
-    const col = { apple: '#e0302a', plum: '#5b2a7a', cherry: '#c4192a', walnut: '#8a6a3a' }[this.info.fruit] ?? '#e0302a';
+    const col = { apple: '#e0302a', plum: '#5b2a7a', cherry: '#c4192a', walnut: '#8a6a3a', pear: '#d9c43a', peach: '#f59a5a', apricot: '#f5a623', quince: '#e8c53a', hazelnut: '#9a6a3a' }[this.info.fruit] ?? '#e0302a';
     const g = new THREE.SphereGeometry(0.16, 8, 6);
     const mt = new THREE.MeshStandardMaterial({ color: col, roughness: 0.35 });
     for (let i = 0; i < 14; i++) {
@@ -1029,6 +1135,7 @@ class TreeView implements View {
     return true;
   }
   tap() {
+    if (VISIT) { UI.visitTap(this); return; }
     if (this.isReady()) this.harvest();
     else UI.openTree(this);
   }
@@ -1098,6 +1205,7 @@ class PetView implements View {
     return null;
   }
   tap() {
+    if (VISIT) { UI.visitTap(this); return; }
     sfx(this.def.model.startsWith('dog') ? 'pop' : 'tap');
     // скача от радост и тръгва нанякъде
     this.wait = 0;

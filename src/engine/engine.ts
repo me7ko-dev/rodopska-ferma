@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 export type Quality = 'low' | 'medium' | 'high';
 
@@ -14,6 +18,21 @@ function detectQuality(): Quality {
 }
 
 export type Updater = (dt: number, t: number) => void;
+
+/** GTAO, който не засенчва прозрачните неща (листенца, светлинки, вода, сенки-петна) — иначе дават черни квадрати. */
+class SoftAOPass extends GTAOPass {
+  _overrideVisibility() {
+    const cache = (this as unknown as { _visibilityCache: THREE.Object3D[] })._visibilityCache;
+    this.scene.traverse((o) => {
+      if (!o.visible) return;
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      const mt = Array.isArray(m) ? m[0] : m;
+      const skip = (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite || o.userData.noAO ||
+        (mt && (mt.transparent || mt.alphaTest > 0 || !mt.depthWrite));
+      if (skip) { o.visible = false; cache.push(o); }
+    });
+  }
+}
 
 /** Текущото качество (за модули, които нямат достъп до Engine). */
 export const QUALITY: { value: Quality } = { value: 'high' };
@@ -41,6 +60,11 @@ export class Engine {
   private prStart = performance.now();
   private prSpan = 3000;
   private prFrames = 0;
+  /** Засенчване на ъглите и основите (само при най-хубавата графика на компютър). */
+  composer: EffectComposer | null = null;
+  ao: SoftAOPass | null = null;
+  aoOn = localStorage.getItem('rf-ao') !== 'off';
+  private slowT = 0;
 
   constructor(public canvas: HTMLCanvasElement) {
     this.quality = detectQuality();
@@ -77,8 +101,41 @@ export class Engine {
     this.sun = sun;
     this.scene.add(sun, sun.target);
 
+    if (this.quality === 'high' && !IS_TOUCH && this.aoOn) this.setupAO();
     addEventListener('resize', () => this.resize());
     this.resize();
+  }
+
+  private setupAO() {
+    const r = this.renderer;
+    // буферът е с MSAA — ръбовете остават гладки и със засенчването
+    const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+    const c = new EffectComposer(r, rt);
+    c.addPass(new RenderPass(this.scene, this.camera));
+    const ao = new SoftAOPass(this.scene, this.camera, innerWidth, innerHeight);
+    ao.updateGtaoMaterial({ radius: 1.6, distanceExponent: 1.5, thickness: 1.2, scale: 1.0, samples: 12, distanceFallOff: 1, screenSpaceRadius: false });
+    ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+    ao.blendIntensity = 0.85;
+    c.addPass(ao);
+    c.addPass(new OutputPass());
+    c.setPixelRatio(this.renderer.getPixelRatio());
+    c.setSize(innerWidth, innerHeight);
+    this.composer = c;
+    this.ao = ao;
+  }
+
+  /** Включва/изключва засенчването (запомня се). */
+  setAO(on: boolean) {
+    this.aoOn = on;
+    localStorage.setItem('rf-ao', on ? 'on' : 'off');
+    if (on && !this.composer && this.quality === 'high') this.setupAO();
+    if (!on && this.composer) this.dropAO();
+  }
+
+  private dropAO() {
+    this.composer?.dispose();
+    this.composer = null;
+    this.ao = null;
   }
 
   applyPixelRatio() {
@@ -97,6 +154,10 @@ export class Engine {
     this.pr = v;
     this.renderer.setPixelRatio(v);
     this.renderer.setSize(innerWidth, innerHeight, false);
+    if (this.composer) {
+      this.composer.setPixelRatio(v);
+      this.composer.setSize(innerWidth, innerHeight);
+    }
   }
 
   /** Веднъж в секунда: ако кадрите не стигат — малко по-ниска резолюция; ако има запас — по-висока. */
@@ -146,6 +207,10 @@ export class Engine {
     // На тесен (вертикален) екран разширяваме зрителния ъгъл, за да се вижда повече от фермата
     this.camera.fov = w < h ? 44 : 32;
     this.camera.updateProjectionMatrix();
+    if (this.composer) {
+      this.composer.setPixelRatio(this.renderer.getPixelRatio());
+      this.composer.setSize(w, h);
+    }
   }
 
   /** Сянката следва мястото, което гледаме (за по-остри сенки). */
@@ -180,7 +245,14 @@ export class Engine {
       this.time.value += dt;
       for (const u of this.updaters) u(dt, this.time.value);
       this.adaptResolution(now);
-      this.renderer.render(this.scene, this.camera);
+      if (this.composer) {
+        this.composer.render(dt);
+        // ако компютърът не смогва дори с по-ниска резолюция — изключваме засенчването за тази сесия
+        if (this.time.value > 8) {
+          this.slowT = this.fps < 32 ? this.slowT + dt : Math.max(0, this.slowT - dt);
+          if (this.slowT > 4) { this.dropAO(); console.info('AO: изключено (бавно)'); }
+        }
+      } else this.renderer.render(this.scene, this.camera);
     };
     requestAnimationFrame(loop);
   }

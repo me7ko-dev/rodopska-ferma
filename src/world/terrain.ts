@@ -6,26 +6,32 @@ import { heightAt, roadZAt, ROAD_W, FARM, DRIVE, ROAD_Z, VILLAGE_PLOTS, POND } f
 const SIZE = 1500;
 const CENTER_X = 50;
 
-const C_GRASS = new THREE.Color('#62a034');
-const C_GRASS_DARK = new THREE.Color('#4a8a2c');
-const C_GRASS_LIGHT = new THREE.Color('#86bd45');
-const C_FOREST = new THREE.Color('#3f6e2a');
+const C_GRASS = new THREE.Color('#5c9a36');
+const C_GRASS_DARK = new THREE.Color('#3f7a2a');
+const C_GRASS_LIGHT = new THREE.Color('#8cbd4a');
+const C_GRASS_BLUE = new THREE.Color('#4f8f4a');
+const C_FOREST = new THREE.Color('#3a6828');
 const C_ROCK = new THREE.Color('#8a8a7c');
-const C_DRY = new THREE.Color('#a3a356');
+const C_DRY = new THREE.Color('#b3ad5e');
 
 /** Цвят на тревата в дадена точка (един и същ за терена и за нарисуваната земя на фермата). */
 export function grassColor(x: number, z: number, out: THREE.Color) {
   const n1 = fbm(x * 0.03, z * 0.03, 3);
   const n2 = noise2(x * 0.11 + 5, z * 0.11 - 3);
+  const n3 = fbm(x * 0.012 + 40, z * 0.012 - 7, 2);
   out.copy(C_GRASS);
-  if (n1 < 0.5) out.lerp(C_GRASS_DARK, Math.min(1, (0.5 - n1) * 2.2));
-  else out.lerp(C_GRASS_LIGHT, Math.min(1, (n1 - 0.5) * 2.4));
-  out.lerp(C_DRY, smooth(0.72, 0.95, n2) * 0.25);
+  if (n1 < 0.5) out.lerp(C_GRASS_DARK, Math.min(1, (0.5 - n1) * 2.4));
+  else out.lerp(C_GRASS_LIGHT, Math.min(1, (n1 - 0.5) * 2.2));
+  // големи петна: по-синкава (влажна) и по-жълтеникава (суха) трева
+  out.lerp(C_GRASS_BLUE, smooth(0.55, 0.8, n3) * 0.35);
+  out.lerp(C_DRY, smooth(0.68, 0.95, n2) * 0.32);
   return out;
 }
 
-/** Малка повтаряща се текстура с шарка на трева — дава детайл отблизо. */
+/** Малка повтаряща се текстура с шарка на трева — дава детайл отблизо (стръкчета + петна). */
+let detailTex: THREE.CanvasTexture | null = null;
 function detailTexture() {
+  if (detailTex) return detailTex;
   const s = 256;
   const cv = document.createElement('canvas');
   cv.width = cv.height = s;
@@ -38,16 +44,32 @@ function detailTexture() {
       const fx = x / s, fy = y / s;
       const n = (a: number, b: number) => fbm(a * 9, b * 9, 3);
       const v = n(fx, fy) * (1 - fx) * (1 - fy) + n(fx - 1, fy) * fx * (1 - fy) + n(fx, fy - 1) * (1 - fx) * fy + n(fx - 1, fy - 1) * fx * fy;
-      const k = 0.82 + v * 0.3 + (r() - 0.5) * 0.08;
+      const k = 0.84 + v * 0.26 + (r() - 0.5) * 0.06;
       const i = (y * s + x) * 4;
       img.data[i] = img.data[i + 1] = img.data[i + 2] = clamp(k * 235, 0, 255);
       img.data[i + 3] = 255;
     }
   g.putImageData(img, 0, 0);
+  // стръкчета трева: къси светли и тъмни чертички (рисуваме ги и отвъд ръба — за безшевност)
+  g.lineCap = 'round';
+  for (let i = 0; i < 5200; i++) {
+    const x = r() * s, y = r() * s, len = 3 + r() * 6, a = -Math.PI / 2 + (r() - 0.5) * 1.1;
+    const light = r() < 0.55;
+    g.strokeStyle = light ? `rgba(255,255,255,${0.1 + r() * 0.16})` : `rgba(0,0,0,${0.08 + r() * 0.12})`;
+    g.lineWidth = 0.8 + r() * 0.9;
+    for (const ox of [0, -s, s]) for (const oy of [0, -s, s]) {
+      if ((ox || oy) && x + ox > -10 && x + ox < s + 10 && y + oy > -10 && y + oy < s + 10) {} else if (ox || oy) continue;
+      g.beginPath();
+      g.moveTo(x + ox, y + oy);
+      g.lineTo(x + ox + Math.cos(a) * len, y + oy + Math.sin(a) * len);
+      g.stroke();
+    }
+  }
   const t = new THREE.CanvasTexture(cv);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
+  detailTex = t;
   return t;
 }
 
@@ -164,6 +186,16 @@ export function buildFarmGround(paths: { pts: [number, number][]; w: number; kin
   geo.rotateX(-Math.PI / 2);
   geo.translate((DECAL.minX + DECAL.maxX) / 2, 0.02, (DECAL.minZ + DECAL.maxZ) / 2);
   const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.95, metalness: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  // детайл отблизо: същата шарка с трева като на терена, повторена на всеки 7 м
+  const det = detailTexture();
+  const rep = new THREE.Vector2((DECAL.maxX - DECAL.minX) / 7, (DECAL.maxZ - DECAL.minZ) / 7);
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.detailMap = { value: det };
+    sh.uniforms.detailRep = { value: rep };
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <map_pars_fragment>', '#include <map_pars_fragment>\nuniform sampler2D detailMap; uniform vec2 detailRep;')
+      .replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb *= texture2D(detailMap, vMapUv * detailRep).rgb * 1.08;');
+  };
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
   mesh.renderOrder = -5;

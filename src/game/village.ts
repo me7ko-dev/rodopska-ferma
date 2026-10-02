@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VILLAGE_HOUSES } from './data';
+import { VILLAGE_HOUSES, VILLAGE_UPGRADES } from './data';
 import { QUALITY } from '../engine/engine';
 import { S, save, spend, addCoins, addXP, now } from './state';
 import { VILLAGE_PLOTS, ROAD_Z, ROAD_W, roadZAt, heightAt } from '../world/layout';
@@ -14,13 +14,29 @@ import { retroCarLite, RETRO_PAINTS, type RetroKind } from './retro';
 const proxyMat = new THREE.MeshBasicMaterial({ visible: false });
 export const RENT_CAP_H = 12; // наемът се трупа най-много 12 часа
 
+/** Наем на час (с ремонтите). */
+export function rentOf(plot: number) {
+  const up = S.village[plot]?.up ?? 0;
+  return Math.round(VILLAGE_HOUSES[plot].rent * (up ? VILLAGE_UPGRADES[up - 1].mult : 1));
+}
+
 /** Колко монети наем са се натрупали за къща (максимум 12 часа). */
 export function rentDue(plot: number) {
   const v = S.village[plot];
   if (!v) return 0;
-  const h = VILLAGE_HOUSES[plot];
   const hours = Math.min(RENT_CAP_H, (now() - v.last) / 3600000);
-  return Math.floor(h.rent * hours);
+  return Math.floor(rentOf(plot) * hours);
+}
+
+/** Следващият ремонт на къща в селото (или null). */
+export function nextUpgrade(plot: number) {
+  const v = S.village[plot];
+  if (!v) return null;
+  const up = v.up ?? 0;
+  const u = VILLAGE_UPGRADES[up];
+  if (!u) return null;
+  const h = VILLAGE_HOUSES[plot];
+  return { ...u, level: h.level + u.lvAdd, price: Math.round((h.price * u.cost) / 100) * 100, rent: Math.round(h.rent * u.mult) };
 }
 
 export class Village {
@@ -74,6 +90,19 @@ export class Village {
         const f = fence(13, 12, '#f6f1e6', 2.6);
         f.rotation.y = pl.rot;
         g.add(f);
+        // ремонтите личат: цветя, пейка и дърво, накрая фонтан в двора
+        const up = S.village[i].up ?? 0;
+        const yardItems: [string, number, number, number][] = [];
+        if (up >= 1) yardItems.push(['n_flower_group1', 1.1, -4.5, 4.6], ['n_flower_group1', 1.1, 4.5, 4.6], ['n_bush_flowers', 1.6, -5, 2]);
+        if (up >= 2) yardItems.push(['bench1', 2.2, 3.6, 3.4], ['tree_b', 5, -4.6, -3.5]);
+        if (up >= 3) yardItems.push(['fountain', 2.6, 0, 4.4], ['n_flower_group2', 1, 5, -1]);
+        for (const [m, sz, x, z] of yardItems) {
+          const o = instance(m, sz, m.startsWith('tree') ? 'y' : 'max');
+          const k = pl.rot ? -1 : 1;
+          o.position.set(x * k, 0, z * k);
+          o.rotation.y = pl.rot;
+          g.add(o);
+        }
       }
       const proxy = new THREE.Mesh(new THREE.BoxGeometry(11, 6, 11), proxyMat);
       proxy.position.y = 3;
@@ -98,6 +127,23 @@ export class Village {
     save();
     this.build();
     sparkle(new THREE.Vector3(VILLAGE_PLOTS[i].x, 3, VILLAGE_PLOTS[i].z), 40);
+    sfx('build');
+    return true;
+  }
+
+  upgrade(i: number) {
+    const u = nextUpgrade(i);
+    if (!u) return false;
+    if (S.level < u.level) { UI.toast(`Трябва ниво ${u.level}`, 'warn'); return false; }
+    // първо събираме наема по старата цена
+    this.collect(i);
+    if (!spend(u.price)) { UI.toast('Нямаш достатъчно монети', 'warn'); sfx('error'); return false; }
+    S.village[i].up = (S.village[i].up ?? 0) + 1;
+    S.village[i].last = now();
+    addXP(Math.round(u.price / 30));
+    save();
+    this.build();
+    sparkle(new THREE.Vector3(VILLAGE_PLOTS[i].x, 4, VILLAGE_PLOTS[i].z), 40);
     sfx('build');
     return true;
   }
@@ -160,7 +206,7 @@ export class Village {
       w.obj.rotation.y = w.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
     }
     this.plots.forEach((p, i) => {
-      if (p.mk) p.mk.visible = rentDue(i) >= Math.max(5, VILLAGE_HOUSES[i].rent * 0.25);
+      if (p.mk) p.mk.visible = rentDue(i) >= Math.max(5, rentOf(i) * 0.25);
     });
   }
 }

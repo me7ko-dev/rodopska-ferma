@@ -39,9 +39,9 @@ export function waterMaterial() {
         col += vec3(1.0) * spark * 0.55 * edge;
         col += vec3(0.08,0.12,0.12) * wave * 0.25;
         // пяна по ръба
-        float foam = smoothstep(0.86, 0.96, r) * (0.6 + 0.4*sin(atan(p.y,p.x)*14.0 + t*1.5));
-        col = mix(col, vec3(0.93,0.97,0.98), foam*0.7);
-        float a = smoothstep(1.0, 0.95, r);
+        float foam = smoothstep(0.88, 0.97, r) * (0.6 + 0.4*sin(atan(p.y,p.x)*14.0 + t*1.5));
+        col = mix(col, vec3(0.86,0.93,0.92), foam*0.35);
+        float a = smoothstep(1.0, 0.93, r);
         gl_FragColor = vec4(col, a * 0.94);
         #include <colorspace_fragment>
         #include <fog_fragment>
@@ -49,17 +49,44 @@ export function waterMaterial() {
   });
 }
 
+let bankTex: THREE.CanvasTexture | null = null;
+function bankTexture() {
+  if (bankTex) return bankTex;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 256;
+  const g = cv.getContext('2d')!;
+  const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(92,78,52,1)');
+  gr.addColorStop(0.78, 'rgba(110,92,60,1)');
+  gr.addColorStop(0.86, 'rgba(176,150,104,0.95)');
+  gr.addColorStop(0.93, 'rgba(150,140,90,0.55)');
+  gr.addColorStop(1, 'rgba(120,140,70,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 256, 256);
+  // камъчета и неравности по пясъка
+  for (let i = 0; i < 900; i++) {
+    const a = Math.random() * Math.PI * 2, rr = 100 + Math.random() * 20;
+    const v = 120 + Math.random() * 80;
+    g.fillStyle = `rgba(${v},${v - 10},${v - 30},${0.25 + Math.random() * 0.4})`;
+    g.fillRect(128 + Math.cos(a) * rr, 128 + Math.sin(a) * rr, 1 + Math.random() * 2.5, 1 + Math.random() * 2.5);
+  }
+  bankTex = new THREE.CanvasTexture(cv);
+  bankTex.colorSpace = THREE.SRGBColorSpace;
+  return bankTex;
+}
+
 /** Езеро: бряг, вода и (по желание) водни лилии около него се добавят отвън. */
 export function buildPond(x: number, z: number, rx: number, rz: number) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
-  // бряг — пръст и пясък
+  // бряг — мокра пръст и пясък, който плавно преминава в тревата
   const bank = new THREE.Mesh(
     new THREE.CircleGeometry(1, 48).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: '#a88a5c', roughness: 1 }),
+    new THREE.MeshStandardMaterial({ map: bankTexture(), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }),
   );
-  bank.scale.set(rx + 1.3, 1, rz + 1.3);
+  bank.scale.set(rx + 2.4, 1, rz + 2.4);
   bank.position.y = 0.04;
+  bank.renderOrder = -4;
   bank.receiveShadow = true;
   // тъмно дъно (дава дълбочина)
   const bed = new THREE.Mesh(

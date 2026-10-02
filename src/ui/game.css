@@ -214,3 +214,44 @@ body.panel-open #guide, body.panel-open #sowhint { display: none; }
 .mt { margin-top: 12px; }
 .btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
 input.name { font-family: inherit; font-weight: 800; font-size: 16px; padding: 6px 10px; border-radius: 10px; border: 3px solid #ecd3a3; background: #fffdf6; color: #4a2f16; width: 180px; }
+
+/* ---------- съседи (онлайн) ---------- */
+#hud-bottom .stack { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+#btn-social { width: 56px; height: 56px; background: radial-gradient(circle at 40% 30%, #cdeaff, #7cc8ff 65%, #2f8fdc); box-shadow: 0 5px 0 #1b5f99, 0 8px 14px rgba(0,0,0,.3); }
+#btn-social img { width: 42px; height: 42px; }
+@media (max-width: 520px) { #btn-social { width: 50px; height: 50px; } #btn-social img { width: 36px; height: 36px; } #hud-bottom .stack { gap: 18px; } }
+.tabs.mini { margin: 4px 0 10px; }
+.tabs.mini .tab { padding: 5px 10px; font-size: 13px; }
+.auth { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.auth label { display: flex; flex-direction: column; gap: 4px; font-weight: 800; font-size: 14px; }
+input.name.wide { width: 100%; }
+input, textarea { user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.small-note { font-size: 12px; color: #8a6440; text-align: center; margin-top: 8px; line-height: 1.4; }
+.sec { font-weight: 800; color: #7a4a22; margin: 14px 0 6px; font-size: 14.5px; border-bottom: 2px dashed #ecd3a3; padding-bottom: 3px; }
+.addrow { margin-bottom: 6px; }
+.addrow input { flex: 1; }
+.person { display: flex; align-items: center; gap: 8px; background: #fffdf6; border: 3px solid #ecd3a3; border-radius: 14px; padding: 6px 8px; margin-bottom: 6px; }
+.person .av { width: 40px; height: 40px; flex: none; border-radius: 50%; background: linear-gradient(#8ee05f, #48a52a); color: #fff; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; border: 3px solid #fff3d6; text-shadow: 0 2px 0 rgba(30,70,10,.6); }
+.person .info { flex: 1; min-width: 0; }
+.person .info b { font-size: 15px; }
+.person .lv { font-size: 12px; font-weight: 800; color: #fff; background: #e0a800; border-radius: 8px; padding: 1px 6px; }
+.person .sub { font-size: 12px; color: #8a6440; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toplist { display: flex; flex-direction: column; gap: 4px; }
+.trow { display: flex; align-items: center; gap: 10px; background: #fffdf6; border: 2px solid #ecd3a3; border-radius: 12px; padding: 6px 10px; cursor: pointer; }
+.trow.me { background: #eaffdb; border-color: #8fd45f; }
+.trow .rk { width: 30px; text-align: center; font-weight: 800; font-size: 16px; color: #7a4a22; }
+.trow .nm { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.trow .nm small { font-size: 11.5px; color: #8a6440; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow .val { font-weight: 800; white-space: nowrap; }
+.stall { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 4px 0 8px; }
+.stall .slot b { font-size: 12px; display: flex; align-items: center; }
+.stall .slot .btn { position: absolute; top: -10px; right: -10px; min-height: 26px; padding: 0 7px; }
+.btns.col { flex-direction: column; align-items: stretch; }
+
+/* ---------- на гости ---------- */
+body.visiting #hud-bottom, body.visiting .money .pill:not([data-open="settings"]), body.visiting #guide, body.visiting #badge-ach { display: none !important; }
+#visitbar { position: fixed; left: 0; right: 0; bottom: calc(12px + var(--safe-b)); z-index: 8; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+#visitbar > * { pointer-events: auto; }
+#visitbar .vtitle { font-weight: 800; font-size: 18px; background: rgba(70,40,15,.78); border: 3px solid #fff3d6; border-radius: 16px; padding: 4px 14px; }
+#visitbar .vhint { background: rgba(255,250,235,.95); border: 3px solid #c98f4f; border-radius: 14px; padding: 5px 12px; font-weight: 800; font-size: 13.5px; color: #4a2f16; max-width: 92vw; text-align: center; }
+#visitbar .vbtns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }

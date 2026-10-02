@@ -14,6 +14,8 @@ function free(x: number, z: number, margin = 0) {
   if (x > FARM.minX - 2 - margin && x < FARM.maxX + 2 + margin && z > FARM.minZ - 2 - margin && z < FARM.maxZ + 2 + margin) return false;
   for (const p of VILLAGE_PLOTS) if (Math.abs(x - p.x) < 8 + margin && Math.abs(z - p.z) < 8 + margin) return false;
   if (Math.abs(x - DRIVE.x) < 4 && z > FARM.maxZ - 2 && z < ROAD_Z) return false;
+  // нищо не расте във водата и на брега на езерото
+  if (Math.hypot((x - POND.x) / (POND.rx + 1.6), (z - POND.z) / (POND.rz + 1.6)) < 1) return false;
   if (x > 40 && x < 175 && Math.abs(z - ROAD_Z) < 24 && Math.abs(z - ROAD_Z) > 6 && margin === 0) {
     // между къщите в селото — оставяме по малко
     return ((x * 7 + z * 3) | 0) % 5 === 0;
@@ -203,6 +205,18 @@ export function buildNature(quality: 'low' | 'medium' | 'high') {
     else if (r() < 0.3) addD('n_bush_flowers', x, z, 0.9 + r() * 0.6);
     else if (r() < 0.3) addD('n_flower_group1', x, z, 0.9 + r() * 0.4);
     else addD('tuft', x, z, 1.2 + r() * 0.6);
+  }
+  // бреговете на езерото: камъни, тръстика и цветя в кръг
+  for (let i = 0; i < 46; i++) {
+    const a = (i / 46) * Math.PI * 2 + r() * 0.1;
+    const k = 1.08 + r() * 0.12;
+    const x = POND.x + Math.cos(a) * (POND.rx + 0.4) * k, z = POND.z + Math.sin(a) * (POND.rz + 0.4) * k;
+    if (Math.abs(a - Math.PI * 0.25) < 0.25) continue; // пътечката към езерото
+    const t = r();
+    if (t < 0.4) addD(['n_rock1', 'n_rock2', 'n_rock3'][(r() * 3) | 0], x, z, 0.35 + r() * 0.45);
+    else if (t < 0.75) addD('n_grass_tall', x, z, 0.9 + r() * 0.5);
+    else if (t < 0.9) addD('n_clover1', x, z, 1 + r() * 0.4);
+    else addD(['n_petal_white', 'n_petal_yellow'][(r() * 2) | 0], x, z, 1);
   }
   const dsize: Record<string, number> = {
     n_grass: 0.7, n_grass_wispy1: 0.9, n_grass_wispy2: 0.9, n_grass_tall: 1.2,

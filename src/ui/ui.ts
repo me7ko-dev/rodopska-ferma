@@ -3,16 +3,19 @@ import { icon, img } from './icons';
 import { S, on, save, spend, spendDiamonds, addCoins, addDiamonds, addXP, count, used, cap, isSiloItem, takeAll, now, skipCost, resetSave, emit, achValue, achReady } from '../game/state';
 import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMALS, TREES, MAX_ANIMALS, ACHIEVEMENTS, xpForLevel, unlocksAt, type BuildingDef } from '../game/data';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
-import { rentDue, RENT_CAP_H } from '../game/village';
+import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
 import { sparkle, flyTo, toScreen } from '../game/fx';
 import type { Farm, View } from '../game/world';
-import { centerOf } from '../game/world';
+import { centerOf, slotsOf, extraSlotCost, MAX_EXTRA_SLOTS } from '../game/world';
 import type { Village } from '../game/village';
 import type { Vehicles } from '../game/vehicles';
 import type { People } from '../game/npc';
 import type { Engine } from '../engine/engine';
 import { loadModel } from '../engine/assets';
+import { initSocial, openSocial, marketTabs, marketRender, marketActions, resetMarket, choose, visitTap } from './social';
+import { VISIT } from '../game/state';
+import { ON } from '../online/online';
 import * as THREE from 'three';
 
 interface Ctx { farm: Farm; village: Village; vehicles: Vehicles; people: People; engine: Engine }
@@ -63,7 +66,10 @@ function buildHUD() {
       <div class="rbtn" id="btn-garage" data-open="garage">${img('car:pickup')}<span class="outl">Коли</span></div>
     </div>
     <div>
-      <div class="rbtn" id="btn-travel" data-open="travel">${img('m:townhouse1')}<span class="outl">Град</span></div>
+      <div class="stack">
+        <div class="rbtn" id="btn-social" data-open="social">${img('friends')}<span class="outl">Съседи</span><div class="badge" id="badge-social"></div></div>
+        <div class="rbtn" id="btn-travel" data-open="travel">${img('m:townhouse1')}<span class="outl">Град</span></div>
+      </div>
       <div class="rbtn big" id="btn-shop" data-open="shop">${img('b:market')}<span class="outl">Магазин</span></div>
     </div>
   </div>
@@ -163,7 +169,7 @@ function onClick(ev: MouseEvent) {
   if (opener) {
     sfx('tap');
     const what = opener.dataset.open!;
-    ({ storage: () => UI.openStorage(true), orders: () => UI.openOrders(), home: () => UI.openHome(), garage: () => UI.openGarage(), travel: () => travel(), shop: () => openShop(), settings: () => openSettings(), profile: () => openProfile(), coins: () => openProfile(), diamonds: () => openProfile() } as Record<string, () => void>)[what]?.();
+    ({ storage: () => UI.openStorage(true), orders: () => UI.openOrders(), home: () => UI.openHome(), garage: () => UI.openGarage(), travel: () => travel(), shop: () => openShop(), social: () => openSocial(), settings: () => openSettings(), profile: () => openProfile(), coins: () => openProfile(), diamonds: () => openProfile() } as Record<string, () => void>)[what]?.();
     return;
   }
   const act = t.closest('[data-act]') as HTMLElement | null;
@@ -213,7 +219,8 @@ function openSeeds(f: View) {
   seedField = f;
   close();
   closeTip();
-  const crops = Object.values(CROPS).sort((a, b) => a.level - b.level);
+  const all = Object.values(CROPS).sort((a, b) => a.level - b.level);
+  const crops = [...all.filter((c) => c.level <= S.level), ...all.filter((c) => c.level > S.level).slice(0, 2)];
   const sel = C.farm.tool?.kind === 'sow' ? C.farm.tool.crop : '';
   $('#seeds .bar').innerHTML = crops.map((c) => {
     const lk = c.level > S.level;
@@ -279,7 +286,7 @@ function openProduction(v: View) {
     live: true,
     render: () => {
       const q = v.e.queue!, d = v.e.done!;
-      const slots = def.slots ?? 2;
+      const slots = slotsOf(v.e);
       let html = `<div class="panel-desc">${def.desc}</div><div class="queue">`;
       for (const it of d) html += `<div class="slot done" data-act="collect">${img(it.out, '')}<div>Готово!</div></div>`;
       q.forEach((it, i) => {
@@ -291,9 +298,11 @@ function openProduction(v: View) {
       });
       for (let i = q.length; i < slots; i++) html += `<div class="slot">празно</div>`;
       html += `</div><div class="recipes">`;
+      let lockedShown = 0;
       def.recipes!.forEach((r, i) => {
         const it = ITEMS[r.out];
         const lk = it.level > S.level;
+        if (lk && ++lockedShown > 2) return;
         const ok = Object.entries(r.needs).every(([k, n]) => count(k) >= n);
         html += `<div class="recipe ${lk ? 'locked' : ''}">${img(r.out, '')}<div class="info">
           <div class="nm">${it.name}${r.qty > 1 ? ` ×${r.qty}` : ''}</div>
@@ -301,13 +310,24 @@ function openProduction(v: View) {
           <div class="tm">⏱ ${fmtTime(r.time)} · ⭐ ${it.xp * r.qty}</div></div>
           ${lk ? `<b style="font-size:12px">Ниво ${it.level}</b>` : `<button class="btn sm ${ok && q.length < slots ? '' : 'gray'}" data-act="make" data-i="${i}">Направи</button>`}</div>`;
       });
-      html += `</div><div class="btns"><button class="btn sm blue" data-act="move">✥ Премести</button></div>`;
+      const ec = extraSlotCost(v.e);
+      html += `</div><div class="btns"><button class="btn sm blue" data-act="move">✥ Премести</button>${(v.e.extra ?? 0) < MAX_EXTRA_SLOTS ? `<button class="btn sm gold" data-act="slot">+1 място за ${img('coin')}${fmt(ec)}</button>` : ''}</div>`;
       return html;
     },
     actions: {
+      slot: () => {
+        const cost = extraSlotCost(v.e);
+        if (!cost) return;
+        if (!spend(cost)) { UI.toast('Нямаш достатъчно монети', 'warn'); sfx('error'); return; }
+        v.e.extra = (v.e.extra ?? 0) + 1;
+        addXP(Math.round(cost / 40));
+        save();
+        sfx('build');
+        UI.toast('Още едно място в опашката!', 'ok');
+      },
       make: (el) => {
         const r = def.recipes![+el.dataset.i!];
-        if (v.e.queue!.length >= (def.slots ?? 2)) { UI.toast('Опашката е пълна', 'warn'); return; }
+        if (v.e.queue!.length >= slotsOf(v.e)) { UI.toast('Опашката е пълна', 'warn'); return; }
         const miss = Object.entries(r.needs).filter(([k, n]) => count(k) < n).map(([k]) => ITEMS[k].name);
         if (miss.length) { UI.toast('Липсва: ' + miss.join(', '), 'warn'); sfx('error'); return; }
         v.start!(r);
@@ -385,7 +405,7 @@ function openStorage(silo: boolean) {
 }
 function upgradeCost(silo: boolean) {
   const n = ((silo ? S.siloCap : S.barnCap) - 50) / 25;
-  return Math.round(150 * Math.pow(1.55, n));
+  return Math.round(150 * Math.pow(1.42, n) / 10) * 10;
 }
 
 // =====================================================================
@@ -461,6 +481,9 @@ function openShop() {
       if (tab === 'field') list = Object.values(BUILDINGS).filter((b) => b.kind === 'field' || b.kind === 'tree');
       if (tab === 'deco') list = Object.values(BUILDINGS).filter((b) => b.kind === 'deco');
       list.sort((a, b) => a.level - b.level);
+      const lockedAll = list.filter((b) => b.level > S.level);
+      list = [...list.filter((b) => b.level <= S.level), ...lockedAll.slice(0, 3)];
+      const more = lockedAll.length - 3;
       return `<div class="grid">${list.map((b) => {
         const lk = b.level > S.level;
         const owned = C.farm.byType(b.id).length;
@@ -471,7 +494,7 @@ function openShop() {
           ${lk ? `<div class="lock">Ниво ${b.level}</div>` : ''}${owned ? `<div class="own">${b.kind === 'field' ? `${owned}/${maxFields()}` : owned}</div>` : ''}
           ${ic}<div class="nm">${b.name}</div>
           ${soldOut ? `<div class="sub">${b.kind === 'field' ? 'Нужно е по-високо ниво' : 'Вече имаш'}</div>` : `<div class="price">${price ? `${img('coin')}${fmt(price)}` : 'Безплатно'}</div>`}</div>`;
-      }).join('')}</div>`;
+      }).join('')}</div>${more > 0 ? `<div class="panel-desc mt">… и още ${more} неща на по-високите нива 🔒</div>` : ''}`;
     },
     actions: {
       buy: (el) => {
@@ -584,7 +607,7 @@ function openHome() {
         const owned = !!S.village[i];
         const lk = h.level > S.level;
         html += `<div class="card ${lk && !owned ? 'locked' : ''}" data-act="vh" data-i="${i}">${lk && !owned ? `<div class="lock">Ниво ${h.level}</div>` : ''}${owned ? '<div class="own">Твоя</div>' : ''}
-          ${img('m:' + h.model, 'ic')}<div class="nm">${h.name}</div><div class="sub">${fmt(h.rent)} 🪙 на час</div>
+          ${img('m:' + h.model, 'ic')}<div class="nm">${h.name}${S.village[i]?.up ? ' ' + '★'.repeat(S.village[i].up!) : ''}</div><div class="sub">${fmt(owned ? rentOf(i) : h.rent)} 🪙 на час</div>
           ${owned ? `<div class="price">Наем: ${img('coin')}${fmt(rentDue(i))}</div>` : `<div class="price">${img('coin')}${fmt(h.price)}</div>`}</div>`;
       });
       html += `</div><div class="btns"><button class="btn blue" data-act="go">🗺 Иди в селото</button><button class="btn gold" data-act="rentall">Събери целия наем</button></div>`;
@@ -632,8 +655,14 @@ function openVillageHouse(i: number) {
     live: true,
     render: () => {
       const owned = !!S.village[i];
-      let html = `<div class="big-ic">${img('m:' + h.model, 'ic-lg')}</div><div class="center">Носи <b>${fmt(h.rent)}</b> монети на час</div>`;
-      if (owned) html += `<div class="center mt">Натрупан наем: ${coinsHtml(rentDue(i))}</div><div class="btns"><button class="btn gold" data-act="collect">Събери наема</button></div>`;
+      let html = `<div class="big-ic">${img('m:' + h.model, 'ic-lg')}</div><div class="center">Носи <b>${fmt(owned ? rentOf(i) : h.rent)}</b> монети на час</div>`;
+      if (owned) {
+        html += `<div class="center mt">Натрупан наем: ${coinsHtml(rentDue(i))}</div><div class="btns"><button class="btn gold" data-act="collect">Събери наема</button></div>`;
+        const u = nextUpgrade(i);
+        if (u) html += `<div class="card mt" style="flex-direction:row;cursor:default;text-align:left"><div class="sp"><div class="nm">🔨 ${u.name}</div><div class="sub">Наемът става ${fmt(u.rent)} 🪙 на час</div></div>
+          ${u.level > S.level ? `<b>Ниво ${u.level}</b>` : `<button class="btn" data-act="up">${img('coin')}${fmt(u.price)}</button>`}</div>`;
+        else html += `<div class="panel-desc mt">Напълно ремонтирана! ★★★</div>`;
+      }
       else if (h.level > S.level) html += `<div class="center mt"><b>Отключва се на ниво ${h.level}</b></div>`;
       else html += `<div class="btns"><button class="btn" data-act="buy">Купи за ${img('coin')}${fmt(h.price)}</button></div>`;
       return html;
@@ -641,6 +670,7 @@ function openVillageHouse(i: number) {
     actions: {
       buy: () => { if (C.village.buy(i)) { close(); UI.toast(`Купи ${h.name}! 🎉`, 'ok'); } },
       collect: () => { if (!C.village.collect(i)) UI.toast('Още няма натрупан наем', 'info'); },
+      up: () => { if (C.village.upgrade(i)) UI.toast('Къщата е ремонтирана! 🔨', 'ok'); },
     },
   }, true);
 }
@@ -703,10 +733,14 @@ function marketDeals() {
   }
   return { hour, deals };
 }
-function openMarket() {
-  open('Сергия — пазарът днес', {
+function openMarket(tab = 'npc') {
+  resetMarket();
+  open('Сергия', {
     live: true,
+    tabs: [{ id: 'npc', label: '🧺 Пазарът в селото' }, ...marketTabs()],
+    tab,
     render: () => {
+      if (current!.tab !== 'npc') return marketRender(current!.tab!);
       const { hour, deals } = marketDeals();
       const sold = (S as any).marketSold?.[hour] ?? {};
       const left = 3600 - ((now() / 1000) % 3600);
@@ -719,6 +753,7 @@ function openMarket() {
       }).join('') || '<div class="empty">Още няма какво да продаваш. Ожъни нещо!</div>'}</div>`;
     },
     actions: {
+      ...marketActions,
       sell: (el) => {
         const { hour, deals } = marketDeals();
         const d = deals[+el.dataset.i!];
@@ -763,6 +798,8 @@ function openSettings() {
       <div class="row"><b>Музика</b><span class="sp"></span><button class="btn sm ${S.music ? '' : 'gray'}" data-act="music">${S.music ? 'Вкл.' : 'Изкл.'}</button></div>
       <div class="row"><b>Ден и нощ</b><span class="sp"></span><button class="btn xs ${DN?.mode !== 'day' ? '' : 'gray'}" data-act="dn" data-m="real">Истинско време</button> <button class="btn xs ${DN?.mode === 'day' ? '' : 'gray'}" data-act="dn" data-m="day">Винаги ден</button></div>
       <div class="row"><b>Графика</b><span class="sp"></span>${(['low', 'medium', 'high'] as const).map((q) => `<button class="btn xs ${C.engine.quality === q ? '' : 'gray'}" data-act="q" data-q="${q}">${{ low: 'Бърза', medium: 'Средна', high: 'Най-хубава' }[q]}</button>`).join(' ')}</div>
+      ${C.engine.quality === 'high' ? `<div class="row"><b>Меки сенки (AO)</b><span class="sp"></span><button class="btn xs ${C.engine.composer ? '' : 'gray'}" data-act="ao">${C.engine.composer ? 'Вкл.' : 'Изкл.'}</button></div>` : ''}
+      <div class="row"><b>Онлайн профил</b><span class="sp"></span><button class="btn sm blue" data-act="online">${ON.me ? '👤 ' + ON.me.name.replace(/</g, '') : 'Влез / Регистрация'}</button></div>
       <div class="row"><b>Как се играе</b><span class="sp"></span><button class="btn sm blue" data-act="help">Покажи</button></div>
       <div class="mt"><b>Автори на 3D моделите</b><div class="credits" id="credits">Зареждане…</div></div>
       <div class="btns"><button class="btn red sm" data-act="reset">Започни отначало</button></div>
@@ -774,6 +811,8 @@ function openSettings() {
       q: (el) => C.engine.setQuality(el.dataset.q as any),
       dn: (el) => DN?.setMode(el.dataset.m as 'real' | 'day'),
       help: () => { close(); showHelp(); },
+      ao: () => C.engine.setAO(!C.engine.composer),
+      online: () => openSocial('me'),
       reset: () => {
         if (!confirmTwice()) return;
         resetSave();
@@ -846,6 +885,7 @@ function showHelp() {
       📋 <b>Поръчки:</b> хората от селото искат стоки. Изпрати поръчката с пикапа и вземи монети и опит.<br>
       🏡 <b>Имоти:</b> подобри къщата си и купувай къщи в селото — носят наем всеки час.<br>
       🚗 <b>Коли:</b> купи гараж и кола, после я карай из селото и Родопите.<br>
+      👥 <b>Съседи:</b> направи си профил (име и парола) — фермата ти се пази в облака. Добавяй приятели, ходи им на гости и им помагай (поливаш нивите, храниш животните). Има класации и пазар между играчите в Сергията.<br>
       🖐 <b>Камера:</b> местиш с пръст, приближаваш с два пръста (или колелцето), въртиш с два пръста (или десния бутон / Q и E).
     </div>`,
     actions: {},
@@ -857,15 +897,16 @@ function showHelp() {
 function levelUp() {
   const lv = S.level;
   const unl = unlocksAt(lv);
-  const dia = lv % 5 === 0 ? 5 : 2;
+  const dia = lv % 10 === 0 ? 10 : lv % 5 === 0 ? 5 : 2;
+  const coins = lv * 15 + lv * lv * 2;
   addDiamonds(dia);
-  addCoins(lv * 15);
+  addCoins(coins);
   sfx('levelup');
   sparkle(C.farm.rig.target.clone().setY(3), 50);
   setTimeout(() => {
     open('Ново ниво!', {
       render: () => `<div class="lvlup"><div class="big outl">Ниво ${lv}</div>
-        <div class="center">Награда: ${diaHtml(dia)} и ${coinsHtml(lv * 15)}</div>
+        <div class="center">Награда: ${diaHtml(dia)} и ${coinsHtml(coins)}</div>
         ${unl.length ? `<div class="mt"><b>Отключено:</b></div><div class="unl">${unl.map((u) => `<div>${img(u.icon === 'home' ? 'm:house_red1' : u.icon === 'land' ? 'm:n_tree5' : u.icon, '')}<br>${u.name}</div>`).join('')}</div>` : ''}
         <div class="btns"><button class="btn" data-act="close">Супер!</button></div></div>`,
       actions: {},
@@ -931,6 +972,14 @@ function showGuide() {
 export function bindUI(ctx: Ctx) {
   C = ctx;
   buildHUD();
+  initSocial({
+    open: (t, p, small) => open(t, p, small),
+    close,
+    rerender: () => rerender(),
+    isOpen: (title) => !!current && (!title || $('#panel-title').textContent === title),
+    tab: () => current?.tab,
+  });
+  if (VISIT) document.body.classList.add('visiting');
   Object.assign(UI, {
     toast(text: string, kind: 'ok' | 'warn' | 'info' = 'info') {
       const el = document.createElement('div');
@@ -956,6 +1005,9 @@ export function bindUI(ctx: Ctx) {
     openLand,
     openVillageHouse,
     openVisitor,
+    choose,
+    visitTap,
+    openSocial,
     placing(on: boolean, ok: boolean) {
       $('#placebar').classList.toggle('show', on);
       ($('#pok') as HTMLButtonElement).classList.toggle('gray', !ok);
@@ -982,12 +1034,13 @@ export function bindUI(ctx: Ctx) {
     if (on) UI.toast('Карай с джойстика (или със стрелките на клавиатурата)', 'info');
   };
   on((what) => {
+    if (VISIT) return;
     if (what === 'levelup') levelUp();
     if (what === 'inv' && S.tut === 2 && S.stats.harvested > 0) guideStep('harvested');
     refreshHUD();
   });
   refreshHUD();
-  showGuide();
+  if (!VISIT) showGuide();
   // жив прозорец (таймери)
   setInterval(() => {
     if (current?.live && !$('#panel-body').matches(':active')) rerender();

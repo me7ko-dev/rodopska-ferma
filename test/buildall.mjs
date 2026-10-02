@@ -13,10 +13,10 @@ await page.goto('http://localhost:5191/');
 await page.waitForFunction(() => window.__rf?.ready, null, { timeout: 120000 });
 const res = await page.evaluate(async () => {
   const rf = window.__rf;
-  rf.S.level = 20; rf.S.coins = 1e7;
+  rf.mod.state.S.level = 50; rf.mod.state.S.coins = 1e8;
+  const { BUILDINGS, LANDS } = rf.mod.data;
   // купуваме цялата земя
-  for (const id of ['east', 'west', 'north', 'ne', 'nw']) rf.farm.buyLand(id);
-  const { BUILDINGS } = await import('/src/game/data.ts');
+  for (const l of LANDS) rf.farm.buyLand(l.id);
   const out = [];
   for (const b of Object.values(BUILDINGS)) {
     if (b.unique && rf.farm.byType(b.id).length) continue;
@@ -33,7 +33,7 @@ const res = await page.evaluate(async () => {
   return out;
 });
 console.log(res.join('\n'));
-await page.evaluate(() => { const rf = window.__rf; rf.rig.flyTo(0, -2, 95); });
+await page.evaluate(() => { const rf = window.__rf; rf.rig.flyTo(0, -16, 120); });
 await page.waitForTimeout(5000);
 await page.screenshot({ path: 'test/tmp/buildall.png' });
 console.log(errors.length ? 'ГРЕШКИ:\n' + [...new Set(errors)].slice(0, 15).join('\n') : 'без грешки');

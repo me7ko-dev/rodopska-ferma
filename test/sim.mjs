@@ -16,7 +16,7 @@ await page.addInitScript(() => {
   window.__skip = 0;
   Date.now = () => real() + window.__skip;
 });
-await page.goto('http://localhost:5191/');
+await page.goto(process.env.URL || 'http://localhost:5191/');
 await page.waitForFunction(() => window.__rf?.ready, null, { timeout: 120000 });
 
 const log = await page.evaluate(async (hours) => {
@@ -29,8 +29,9 @@ const log = await page.evaluate(async (hours) => {
   let lastLevel = S.level;
   const step = 20; // секунди на ход
   const turns = (hours * 3600) / step;
-  const buyOrder = ['bakery', 'field', 'field', 'coop', 'field', 'field', 'dairy', 'cowshed', 'field', 'field', 'sugarmill', 'field', 'garage', 'field', 'sheepfold', 'loom', 'tree_apple', 'juicer', 'field', 'beehive', 'oilpress', 'field', 'cannery'];
-  let bi = 0;
+  const { LANDS, TREES, MAX_ANIMALS, HOME_TIERS, VILLAGE_HOUSES } = rf.mod.data;
+  const fieldPrice = (n) => (n < 6 ? 0 : Math.round(8 + Math.pow(n - 5, 1.6) * 6));
+  const levelTimes = {};
   const sells = {};
   for (let t = 0; t < turns; t++) {
     window.__skip += step * 1000;
@@ -42,7 +43,7 @@ const log = await page.evaluate(async (hours) => {
       v.tick?.();
       if (v.e.done.length) v.collect();
       for (const r of v.def.recipes) {
-        if (v.e.queue.length >= (v.def.slots ?? 2)) break;
+        if (v.e.queue.length >= (v.def.slots ?? 2) + (v.e.extra ?? 0)) break;
         if (ITEMS[r.out].level > S.level) continue;
         const want = ITEMS[r.out].kind === 'feed' ? 6 : 3;
         if (count(r.out) >= want) continue;
@@ -59,8 +60,7 @@ const log = await page.evaluate(async (hours) => {
     // 6) садене: какво липсва най-много (за поръчки/рецепти), иначе пшеница/царевица
     const need = {};
     for (const o of S.orders) if (!o.wait) for (const [k, n] of Object.entries(o.items)) need[k] = (need[k] || 0) + n;
-    const feedNeeds = { wheat: 4, corn: 4, potato: 2, carrot: 2, beet: 2 };
-    for (const [k, n] of Object.entries(feedNeeds)) need[k] = (need[k] || 0) + n;
+    for (const v of views) if (v.def.kind === 'production') for (const r of v.def.recipes) if (ITEMS[r.out].level <= S.level) for (const [k, n] of Object.entries(r.needs)) need[k] = (need[k] || 0) + n;
     const crops = Object.values(CROPS).filter((c) => c.level <= S.level);
     const pick = () => {
       let best = 'wheat', bs = -1;
@@ -84,30 +84,45 @@ const log = await page.evaluate(async (hours) => {
         sells[k] = (sells[k] || 0) + q;
       }
     }
-    // 8) купуване (сгради, ниви, животни, склад)
-    if (bi < buyOrder.length) {
-      const id = buyOrder[bi];
-      const b = BUILDINGS[id];
-      const owned = farm.byType(id).length;
-      if (b.unique && owned) bi++;
-      else if (b.level <= S.level) {
-        const price = id === 'field' ? (owned < 6 ? 0 : Math.round(8 + Math.pow(owned - 5, 1.6) * 6)) : b.price;
-        if (S.coins >= price + 60) {
-          const spot = farm.findSpot(b, 0, 0, 0);
-          if (spot) {
-            spend(price);
-            await farm.beginPlace(id);
-            farm.confirmPlace();
-            out.push(`  ${(t * step / 60).toFixed(0)} мин: купи ${b.name} за ${price}`);
-          } else if (!S.lands.includes('east') && S.level >= 3 && S.coins >= 400) farm.buyLand('east');
-          bi++;
+    // 8) купуване: най-евтиното ново нещо, после земя, животни, склад, къща
+    if (t % 3 === 0) {
+      const cands = [];
+      for (const b of Object.values(BUILDINGS)) {
+        if (b.level > S.level || b.kind === 'deco' || b.kind === 'pet') continue;
+        const owned = farm.byType(b.id).length;
+        if (b.kind === 'field') { if (owned < Math.min(6 + S.level * 2, 36)) cands.push([b, fieldPrice(owned)]); continue; }
+        if (b.kind === 'tree') { if (owned < 2) cands.push([b, b.price]); continue; }
+        if (b.unique || b.kind === 'animal') { if (!owned) cands.push([b, b.price]); continue; }
+      }
+      cands.sort((a, b) => a[1] - b[1]);
+      const c = cands[0];
+      if (c && S.coins >= c[1] * 1.15 + 50) {
+        const spot = farm.findSpot(c[0], 0, 0, 0);
+        if (spot) {
+          spend(c[1]);
+          await farm.beginPlace(c[0].id);
+          farm.confirmPlace();
+          if (c[0].kind !== 'field') out.push(`  ${(t * step / 3600).toFixed(1)} ч: купи ${c[0].name} за ${c[1]}`);
+        } else {
+          const l = LANDS.find((l) => !S.lands.includes(l.id) && l.level <= S.level);
+          if (l && S.coins >= l.price) { farm.buyLand(l.id); out.push(`  ${(t * step / 3600).toFixed(1)} ч: купи земя ${l.id}`); }
         }
       }
+      for (const v of [...farm.views.values()]) if (v.def.kind === 'animal' && v.e.animals.length < (MAX_ANIMALS[v.def.animal] ?? 4) && S.coins > rf.mod.data.ANIMALS[v.def.animal].price * 1.5 + 100) v.buyAnimal();
+      // склад
+      for (const silo of [true, false]) {
+        const used = Object.entries(S.inv).filter(([k]) => isSiloItem(k) === silo).reduce((a, [, n]) => a + n, 0);
+        const cap = silo ? S.siloCap : S.barnCap;
+        const up = Math.round(150 * Math.pow(1.42, (cap - 50) / 25) / 10) * 10;
+        if (used > cap * 0.7 && S.coins > up * 2) { spend(up); if (silo) S.siloCap += 25; else S.barnCap += 25; }
+      }
+      // къща — дневни монети
+      if (new Date(S.lastDaily).toDateString() !== new Date().toDateString()) { S.lastDaily = Date.now(); addCoins(HOME_TIERS[S.home].daily); }
+      const nh = HOME_TIERS[S.home + 1];
+      if (nh && nh.level <= S.level && S.coins > nh.price * 3) { spend(nh.price); S.home++; }
     }
-    for (const v of [...farm.views.values()]) if (v.def.kind === 'animal' && v.e.animals.length < 4 && S.coins > ANIMALS[v.def.animal].price * 2 + 100) v.buyAnimal();
-    if (S.siloCap - 0 < 100 && S.coins > 800) { /* увеличаване на склада */ }
     if (S.level !== lastLevel) {
-      out.push(`${(t * step / 60).toFixed(0)} мин → НИВО ${S.level}  (монети ${S.coins}, диаманти ${S.diamonds}, поръчки ${S.stats.orders}, ниви ${farm.byType('field').length})`);
+      out.push(`${(t * step / 3600).toFixed(1)} ч → НИВО ${S.level}  (монети ${S.coins}, поръчки ${S.stats.orders}, ниви ${farm.byType('field').length}, сгради ${farm.views.size})`);
       lastLevel = S.level;
     }
   }

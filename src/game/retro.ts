@@ -480,6 +480,13 @@ export const RETRO_MODELS: Record<string, { kind: RetroKind; paint: string }> = 
   retro_roadster_white: { kind: 'roadster', paint: '#f3f0e8' },
   retro_van: { kind: 'van', paint: '#d2553b' },
   retro_bus: { kind: 'bus', paint: '#d1462f' },
+  // по-високите нива
+  retro_classic_red: { kind: 'classic', paint: '#9b2335' },
+  retro_van_blue: { kind: 'van', paint: '#2e6f9e' },
+  retro_jeep_white: { kind: 'jeep', paint: '#ece6d6' },
+  retro_bus_blue: { kind: 'bus', paint: '#2e6f9e' },
+  retro_truck_red: { kind: 'truck', paint: '#b8352b' },
+  retro_roadster_gold: { kind: 'roadster', paint: '#d4a63a' },
 };
 for (const [name, m] of Object.entries(RETRO_MODELS)) registerModel(name, () => retroCar(m.kind, m.paint));
 

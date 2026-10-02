@@ -5,3 +5,4 @@ models-raw/
 test/tmp/
 *.log
 SESSION_NOTES.md
+.wrangler/

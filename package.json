@@ -1,7 +1,7 @@
 {
   "name": "rodopska-ferma",
   "productName": "Родопска ферма",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "3D игра за ферма в Родопите",
   "private": true,
   "type": "module",

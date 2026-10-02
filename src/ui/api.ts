@@ -22,6 +22,11 @@ export interface UIApi {
   refresh(): void;
   sowMode(crop: string | null): void;
   openVisitor(v: { item: string; qty: number; coins: number; xp: number; name: string }, accept: () => void, decline: () => void): void;
+  /** Прозорец с въпрос и няколко бутона. */
+  choose(title: string, text: string, options: { label: string; cls?: string; act: () => void }[]): void;
+  /** Натискане на обект, докато си на гости (помощ). */
+  visitTap(v: View): void;
+  openSocial(tab?: string): void;
 }
 
 export const UI = {} as UIApi;

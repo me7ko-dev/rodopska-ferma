@@ -2,7 +2,7 @@
 import { fbm, smooth, clamp } from '../engine/noise';
 
 /** Цялата земя на фермата (с разширенията). */
-export const FARM = { minX: -40, maxX: 40, minZ: -30, maxZ: 26 };
+export const FARM = { minX: -40, maxX: 54, minZ: -30, maxZ: 26 };
 /** Мрежа: 1 клетка = 1 метър. */
 export const CELL = 1;
 
