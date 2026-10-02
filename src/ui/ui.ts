@@ -120,6 +120,7 @@ function open(title: string, p: NonNullable<typeof current>, small = false) {
   renderTabs();
   rerender(true);
   $('#panel-wrap').classList.add('show');
+  document.body.classList.add('panel-open');
   sfx('open');
 }
 
@@ -142,6 +143,7 @@ function close() {
   if (!current) return;
   current = null;
   $('#panel-wrap').classList.remove('show');
+  document.body.classList.remove('panel-open');
   sfx('close');
 }
 

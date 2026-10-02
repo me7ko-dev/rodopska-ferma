@@ -166,9 +166,14 @@ async function boot() {
   // камера над фермата
   const dist = innerWidth < innerHeight ? 50 : 38;
   rig.flyTo(0, -1, dist);
-  rig.target.set(0, 0, -1);
-  rig.distance = dist;
-  rig.update(1);
+  // въведение: започваме отдалеч (виждат се Родопите) и плавно влизаме над фермата
+  rig.target.set(20, 0, 30);
+  rig.distance = 105;
+  rig.yaw = rig.goal.yaw + 0.7;
+  rig.pitchBias = 0.62;
+  rig.smooth = 0.3;
+  rig.update(0.001);
+  setTimeout(() => (rig.smooth = 0.0008), 3800);
 
   let t0 = performance.now();
   engine.onUpdate((dt) => {

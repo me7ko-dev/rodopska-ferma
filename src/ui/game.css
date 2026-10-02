@@ -204,6 +204,7 @@
 /* подсказки (обучение) */
 #guide { position: fixed; left: 50%; top: calc(64px + var(--safe-t)); transform: translateX(-50%); z-index: 9; background: rgba(255,250,235,.96); border: 4px solid #c98f4f; border-radius: 18px; padding: 8px 14px; font-weight: 800; color: #4a2f16; box-shadow: 0 5px 0 #8a5426; display: none; align-items: center; gap: 10px; max-width: min(560px, 92vw); font-size: 15px; }
 #guide.show { display: flex; }
+body.panel-open #guide, body.panel-open #sowhint { display: none; }
 #guide img { width: 40px; height: 40px; flex: none; }
 @media (max-width: 640px) { #guide { font-size: 13px; padding: 6px 10px; top: calc(58px + var(--safe-t)); max-width: 78vw; } #guide img { width: 30px; height: 30px; } }
 .settings .row { padding: 8px 0; border-bottom: 2px dashed #ecd3a3; }

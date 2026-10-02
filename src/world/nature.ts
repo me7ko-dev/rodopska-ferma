@@ -172,7 +172,7 @@ export function buildNature(quality: 'low' | 'medium' | 'high') {
   };
   const grasses = ['tuft', 'tuft', 'tuft', 'tuft', 'tuft', 'tuft', 'tuft', 'n_grass_tall'];
   const flowers = ['n_petal_pink', 'n_petal_white', 'n_petal_purple', 'n_petal_yellow', 'n_petal_red', 'n_petal_pink', 'n_petal_white', 'n_petal_yellow', 'n_petal_purple', 'n_flower_single'];
-  const plants = ['n_fern', 'n_plant_big1', 'n_plant1', 'n_clover1', 'n_plant2', 'n_plant_big2'];
+  const plants = ['n_fern', 'n_plant_big1', 'n_plant1', 'n_clover1', 'n_fern', 'n_clover1'];
   for (let i = 0; i < 9000 * q; i++) {
     const x = -95 + r() * 290, z = -80 + r() * 150;
     if (!free(x, z)) continue;

@@ -31,7 +31,12 @@ export function makeable(): string[] {
 }
 
 export function newOrder(): Order {
-  const pool = makeable();
+  let pool = makeable();
+  // първите поръчки са лесни — само реколта, която вече расте
+  if (S.stats.orders < 3) {
+    const easy = pool.filter((id) => ITEMS[id].kind === 'crop');
+    if (easy.length) pool = easy;
+  }
   const lv = S.level;
   const nTypes = Math.min(pool.length, 1 + (Math.random() < 0.5 ? 1 : 0) + (lv > 6 && Math.random() < 0.35 ? 1 : 0));
   // по-скъпите стоки — по-рядко и по-малко
