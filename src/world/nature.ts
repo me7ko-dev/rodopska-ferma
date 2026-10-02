@@ -2,11 +2,15 @@ import * as THREE from 'three';
 import { rng, fbm } from '../engine/noise';
 import { instancedModel, type Placement } from '../engine/instancing';
 import { windify, addWind } from '../engine/wind';
-import { heightAt, roadZAt, ROAD_W, FARM, VILLAGE_PLOTS, POND, DRIVE, ROAD_Z } from './layout';
+import { heightAt, roadZAt, ROAD_W, FARM, VILLAGE_PLOTS, POND, DRIVE, ROAD_Z, RAIL, RAIL_Z, STATIONS, CITY } from './layout';
 
 /** Може ли да расте нещо тук (не е на пътя, във фермата, в двор на къща). */
 function free(x: number, z: number, margin = 0) {
   if (Math.abs(z - roadZAt(x)) < ROAD_W / 2 + 2 + margin) return false;
+  // релсите, гарите и градът
+  if (x > RAIL.west - 12 && x < RAIL.east + 12 && Math.abs(z - RAIL_Z) < 4 + margin * 1.5) return false;
+  for (const st of STATIONS) if (Math.abs(x - st.x) < (st.city ? 40 : 28) + margin && z > RAIL_Z - 3 && z < RAIL_Z + 20 + margin) return false;
+  if (x > CITY.minX - 15 - margin && x < CITY.maxX + 15 + margin && z > CITY.minZ - 25 - margin && z < CITY.maxZ + 15 + margin) return false;
   if (x > FARM.minX - 2 - margin && x < FARM.maxX + 2 + margin && z > FARM.minZ - 2 - margin && z < FARM.maxZ + 2 + margin) return false;
   for (const p of VILLAGE_PLOTS) if (Math.abs(x - p.x) < 8 + margin && Math.abs(z - p.z) < 8 + margin) return false;
   if (Math.abs(x - DRIVE.x) < 4 && z > FARM.maxZ - 2 && z < ROAD_Z) return false;

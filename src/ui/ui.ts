@@ -63,6 +63,7 @@ function buildHUD() {
       <div class="rbtn" id="btn-garage" data-open="garage">${img('car:pickup')}<span class="outl">Коли</span></div>
     </div>
     <div>
+      <div class="rbtn" id="btn-travel" data-open="travel">${img('m:townhouse1')}<span class="outl">Град</span></div>
       <div class="rbtn big" id="btn-shop" data-open="shop">${img('b:market')}<span class="outl">Магазин</span></div>
     </div>
   </div>
@@ -162,7 +163,7 @@ function onClick(ev: MouseEvent) {
   if (opener) {
     sfx('tap');
     const what = opener.dataset.open!;
-    ({ storage: () => UI.openStorage(true), orders: () => UI.openOrders(), home: () => UI.openHome(), garage: () => UI.openGarage(), shop: () => openShop(), settings: () => openSettings(), profile: () => openProfile(), coins: () => openProfile(), diamonds: () => openProfile() } as Record<string, () => void>)[what]?.();
+    ({ storage: () => UI.openStorage(true), orders: () => UI.openOrders(), home: () => UI.openHome(), garage: () => UI.openGarage(), travel: () => travel(), shop: () => openShop(), settings: () => openSettings(), profile: () => openProfile(), coins: () => openProfile(), diamonds: () => openProfile() } as Record<string, () => void>)[what]?.();
     return;
   }
   const act = t.closest('[data-act]') as HTMLElement | null;
@@ -183,6 +184,26 @@ function onClick(ev: MouseEvent) {
   if (a.startsWith('tip:')) { tipAction?.(a.slice(4)); return; }
   current?.actions[a]?.(act);
   if (current) rerender();
+}
+
+/** Камерата прелита между фермата и града. */
+function inCity() {
+  return C.farm.rig.goal.x > 190;
+}
+function travel() {
+  sfx('tap');
+  const portrait = innerWidth < innerHeight;
+  if (inCity()) C.farm.rig.flyTo(0, -1, portrait ? 50 : 38);
+  else C.farm.rig.flyTo(330, 22, portrait ? 110 : 90);
+  setTimeout(travelLabel, 50);
+}
+function travelLabel() {
+  const b = document.getElementById('btn-travel');
+  if (!b) return;
+  const city = inCity();
+  if (b.dataset.city === String(city)) return;
+  b.dataset.city = String(city);
+  b.innerHTML = city ? `${img('b:barn')}<span class="outl">Ферма</span>` : `${img('m:townhouse1')}<span class="outl">Град</span>`;
 }
 
 // =====================================================================
@@ -970,6 +991,7 @@ export function bindUI(ctx: Ctx) {
   // жив прозорец (таймери)
   setInterval(() => {
     if (current?.live && !$('#panel-body').matches(':active')) rerender();
+    travelLabel();
     const sp = $('#speedo');
     if (C.vehicles.drive && sp) sp.textContent = `${C.vehicles.speedKmh()} км/ч`;
   }, 500);

@@ -9,6 +9,7 @@ import { marker, removeMarker, flyTo, sparkle, bounce, type Marker } from './fx'
 import { icon } from '../ui/icons';
 import { UI } from '../ui/api';
 import { sfx } from '../audio/sfx';
+import { retroCarLite, RETRO_PAINTS, type RetroKind } from './retro';
 
 const proxyMat = new THREE.MeshBasicMaterial({ visible: false });
 export const RENT_CAP_H = 12; // наемът се трупа най-много 12 часа
@@ -113,13 +114,15 @@ export class Village {
   }
 
   spawnTraffic() {
-    const models = ['car_sedan1', 'car_sedan2', 'car_taxi', 'car_suv', 'car_hatch', 'car_pickup', 'car_truck', 'car_sport1'];
-    for (let i = 0; i < 7; i++) {
-      const name = models[i % models.length];
-      const sz = name === 'car_truck' ? 6.8 : name === 'car_pickup' ? 5.4 : 4.6;
-      const obj = instance(name, sz);
+    // стари коли по главния път (минават през селото и града)
+    const kinds: RetroKind[] = ['pickup', 'sedan', 'mini', 'bus', 'pickup_wood', 'classic', 'van', 'truck', 'taxi', 'jeep', 'sedan', 'mini'];
+    const n = QUALITY.value === 'low' ? 8 : 12;
+    for (let i = 0; i < n; i++) {
+      const kind = kinds[i % kinds.length];
+      const obj = retroCarLite(kind, kind === 'taxi' ? '#f2c230' : kind === 'bus' ? '#d1462f' : RETRO_PAINTS[(i * 5) % RETRO_PAINTS.length]);
       const dir = i % 2 ? 1 : -1;
-      this.cars.push({ obj, x: -500 + Math.random() * 1000, dir, speed: 9 + Math.random() * 6, lane: dir * 1.7 });
+      const slow = kind === 'bus' || kind === 'truck';
+      this.cars.push({ obj, x: -650 + (i / n) * 1380 + Math.random() * 40, dir, speed: (slow ? 8 : 10) + Math.random() * 5, lane: dir * 1.7 });
       this.group.add(obj);
     }
     // хора, които се разхождат по пътя в селото

@@ -8,6 +8,7 @@ import { centerOf, footprint } from './world';
 import { BUILDINGS } from './data';
 import type { CameraRig } from '../engine/camera';
 import { sfx } from '../audio/sfx';
+import { spinWheels } from './retro';
 
 /** Колите: паркирани до гаража, доставки и каране. */
 export class Vehicles {
@@ -24,6 +25,8 @@ export class Vehicles {
     prevDist: number;
   } = null;
   onDriveChange: (on: boolean) => void = () => {};
+  /** Още препятствия (сградите в града). */
+  obstacles: ((x: number, z: number) => boolean)[] = [];
   private engineT = 0;
 
   constructor(public scene: THREE.Scene, public farm: Farm, public rig: CameraRig) {
@@ -64,8 +67,8 @@ export class Vehicles {
   deliverAnim() {
     const board = this.farm.byType('board')[0];
     const start = board ? centerOf(board.e) : new THREE.Vector3(DRIVE.x, 0, FARM.maxZ - 4);
-    const model = S.cars.includes('truck') ? 'car_truck' : 'car_pickup';
-    const obj = instance(model, model === 'car_truck' ? 6.8 : 5.4);
+    const model = S.cars.includes('truck') ? 'retro_truck' : 'retro_pickup';
+    const obj = instance(model);
     const path = [
       new THREE.Vector3(start.x + 2, 0, start.z + 1),
       new THREE.Vector3(DRIVE.x, 0, start.z + 3),
@@ -116,8 +119,9 @@ export class Vehicles {
 
   /** Сблъсък с обектите във фермата (кръг срещу правоъгълник). */
   private blocked(x: number, z: number) {
-    if (Math.abs(x) > 420 || z < -110 || z > 140) return true;
+    if (x < -420 || x > 520 || z < -110 || z > 140) return true;
     if (heightAt(x, z) > 7) return true;
+    for (const o of this.obstacles) if (o(x, z)) return true;
     const r = 1.4;
     for (const v of this.farm.views.values()) {
       if (v.def.kind === 'field' || v.def.kind === 'deco') continue;
@@ -148,6 +152,7 @@ export class Vehicles {
         const l = a.distanceTo(b);
         if (rem <= l) {
           const p = a.clone().lerp(b, rem / l);
+          spinWheels(d.obj, p.distanceTo(d.obj.position));
           d.obj.position.set(p.x, 0.05, p.z);
           d.obj.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
           break;
@@ -192,6 +197,7 @@ export class Vehicles {
     } else {
       dv.obj.position.x = nx;
       dv.obj.position.z = nz;
+      spinWheels(dv.obj, dv.speed * dt);
     }
     const h = Math.max(0, heightAt(dv.obj.position.x, dv.obj.position.z));
     dv.obj.position.y = h + 0.05;

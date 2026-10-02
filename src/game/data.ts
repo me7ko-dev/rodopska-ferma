@@ -261,16 +261,20 @@ export interface CarDef {
   color?: string;
 }
 export const CARS: CarDef[] = [
-  { id: 'moto', name: 'Мотор „Лилавата светкавица“', model: 'motorcycle', size: 2.4, level: 3, price: 600, speed: 90, bonus: 'Бърз и забавен за каране из селото.' },
-  { id: 'hatch', name: 'Червен хечбек', model: 'car_hatch', size: 4.2, level: 4, price: 1500, speed: 110, bonus: '+5 монети на всяка поръчка.' },
-  { id: 'pickup', name: 'Син пикап', model: 'car_pickup', size: 5.4, level: 6, price: 3000, speed: 120, bonus: 'Поръчките носят +5% монети.' },
+  { id: 'moto', name: 'Стар мотор с кош', model: 'retro_moto', size: 2.39, level: 3, price: 600, speed: 90, bonus: 'Бърз и забавен за каране из селото.' },
+  { id: 'hatch', name: 'Малка кола „Бръмбарче“', model: 'retro_mini', size: 3.78, level: 4, price: 1500, speed: 100, bonus: '+5 монети на всяка поръчка.' },
+  { id: 'pickup', name: 'Стар син пикап', model: 'retro_pickup', size: 5.28, level: 6, price: 3000, speed: 120, bonus: 'Поръчките носят +5% монети.' },
   { id: 'tractor', name: 'Трактор', model: 'tractor1', size: 4.6, level: 8, price: 5000, speed: 45, bonus: 'Културите растат с 10% по-бързо.' },
-  { id: 'sedan', name: 'Седан', model: 'car_sedan1', size: 4.8, level: 10, price: 7000, speed: 160, bonus: '+3 опит на всяка поръчка.' },
-  { id: 'suv', name: 'Джип', model: 'car_suv', size: 5, level: 12, price: 11000, speed: 170, bonus: 'Минава навсякъде. Поръчките носят +5% монети.' },
-  { id: 'truck', name: 'Камион за доставки', model: 'car_truck', size: 6.8, level: 14, price: 16000, speed: 110, bonus: 'Поръчките носят +10% монети.' },
-  { id: 'taxi', name: 'Такси', model: 'car_taxi', size: 4.8, level: 15, price: 14000, speed: 160, bonus: 'Посетителите плащат с 10% повече.' },
-  { id: 'sport', name: 'Спортна кола', model: 'car_sport2', size: 4.8, level: 18, price: 40000, speed: 240, bonus: 'Най-бързата кола в Родопите!' },
-  { id: 'sport2', name: 'Бяла спортна кола', model: 'car_sport1', size: 4.8, level: 20, price: 10, diamonds: 120, speed: 260, bonus: 'Само за диаманти. Летиш по пътя!' },
+  { id: 'pickup_red', name: 'Червен пикап с дървена каросерия', model: 'retro_pickup_red', size: 5.28, level: 9, price: 4500, speed: 115, bonus: 'Поръчките носят +5% монети.' },
+  { id: 'sedan', name: 'Стар седан', model: 'retro_sedan', size: 4.37, level: 10, price: 7000, speed: 140, bonus: '+3 опит на всяка поръчка.' },
+  { id: 'van', name: 'Ретро бусче', model: 'retro_van', size: 4.54, level: 11, price: 9000, speed: 110, bonus: '+5 монети на всяка поръчка.' },
+  { id: 'suv', name: 'Стар джип', model: 'retro_jeep', size: 4.43, level: 12, price: 11000, speed: 130, bonus: 'Минава навсякъде. Поръчките носят +5% монети.' },
+  { id: 'truck', name: 'Стар камион', model: 'retro_truck', size: 6.77, level: 14, price: 16000, speed: 100, bonus: 'Поръчките носят +10% монети.' },
+  { id: 'taxi', name: 'Жълто такси', model: 'retro_taxi', size: 4.37, level: 15, price: 14000, speed: 140, bonus: 'Посетителите плащат с 10% повече.' },
+  { id: 'classic', name: 'Голям седан от 50-те', model: 'retro_classic', size: 5.21, level: 16, price: 22000, speed: 160, bonus: '+3 опит на всяка поръчка.' },
+  { id: 'bus', name: 'Стар автобус', model: 'retro_bus', size: 9.78, level: 17, price: 30000, speed: 90, bonus: 'Посетителите плащат с 5% повече.' },
+  { id: 'sport', name: 'Червен кабриолет', model: 'retro_roadster', size: 4.51, level: 18, price: 40000, speed: 200, bonus: 'Най-бързата кола в Родопите!' },
+  { id: 'sport2', name: 'Бял кабриолет', model: 'retro_roadster_white', size: 4.51, level: 20, price: 10, diamonds: 120, speed: 220, bonus: 'Само за диаманти. Летиш по пътя!' },
 ];
 
 // --- къщата ти (подобрения) ---

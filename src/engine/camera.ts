@@ -30,7 +30,7 @@ export class CameraRig {
   goal = { x: 0, z: 4, distance: 62, yaw: Math.PI / 4 };
   minDist = 22;
   maxDist = 120;
-  bounds = { minX: -70, maxX: 150, minZ: -60, maxZ: 60 };
+  bounds = { minX: -110, maxX: 450, minZ: -66, maxZ: 108 };
   private vel = new THREE.Vector2();
   private pointers = new Map<number, { x: number; y: number }>();
   private gesture: null | { mode: 'pan' | 'game' | 'pinch' | 'rotate'; start: { x: number; y: number; t: number }; moved: boolean } = null;

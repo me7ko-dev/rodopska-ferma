@@ -14,6 +14,23 @@ interface Entry {
 
 const cache = new Map<string, Entry>();
 const pending = new Map<string, Promise<Entry>>();
+/** Модели, построени с код (старите коли, влакът) — ползват се като всеки друг модел. */
+const procedural = new Map<string, () => THREE.Object3D>();
+
+export function registerModel(name: string, build: () => THREE.Object3D) {
+  procedural.set(name, build);
+}
+
+function ensureProcedural(name: string) {
+  if (cache.has(name)) return;
+  const build = procedural.get(name);
+  if (!build) return;
+  const scene = new THREE.Group();
+  scene.add(build());
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  cache.set(name, { gltf: { scene, animations: [] } as unknown as GLTF, size: box.getSize(new THREE.Vector3()), skinned: false });
+}
 const BASE = import.meta.env.BASE_URL + 'models/';
 
 /** Оправя материалите: без метален вид, листата с изрязване (а не прозрачност), сенки. */
@@ -44,6 +61,7 @@ function fixMaterials(root: THREE.Object3D) {
 }
 
 export function loadModel(name: string): Promise<Entry> {
+  ensureProcedural(name);
   const c = cache.get(name);
   if (c) return Promise.resolve(c);
   let p = pending.get(name);
@@ -75,6 +93,7 @@ export async function loadAll(names: string[], onProgress?: (done: number, total
 }
 
 export function has(name: string) {
+  ensureProcedural(name);
   return cache.has(name);
 }
 
@@ -87,6 +106,7 @@ export function animationsOf(name: string) {
  * Моделът се центрира по X/Z и стъпва на земята (y=0).
  */
 export function instance(name: string, size?: number, by: 'max' | 'x' | 'y' | 'z' = 'max'): THREE.Group {
+  ensureProcedural(name);
   const e = cache.get(name);
   const wrap = new THREE.Group();
   wrap.name = name;
@@ -135,5 +155,6 @@ export function recolor(root: THREE.Object3D, match: (mat: THREE.MeshStandardMat
 }
 
 export function sizeOf(name: string) {
+  ensureProcedural(name);
   return cache.get(name)?.size.clone() ?? new THREE.Vector3(1, 1, 1);
 }

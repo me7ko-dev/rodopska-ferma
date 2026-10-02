@@ -113,7 +113,7 @@ export class People {
     const item = pool[(Math.random() * pool.length) | 0];
     const it = ITEMS[item];
     const qty = it.price < 15 ? 2 + ((Math.random() * 4) | 0) : it.price < 60 ? 1 + ((Math.random() * 2) | 0) : 1;
-    const taxi = S.cars.includes('taxi') ? 1.1 : 1;
+    const taxi = (S.cars.includes('taxi') ? 1.1 : 1) * (S.cars.includes('bus') ? 1.05 : 1);
     const w = makeWalker(MODELS[(Math.random() * MODELS.length) | 0]) as Visitor;
     w.name = NAMES[(Math.random() * NAMES.length) | 0];
     w.item = item;

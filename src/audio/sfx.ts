@@ -59,7 +59,7 @@ function noise(dur: number, vol = 0.15, filter = 2000, when = 0, q = 1) {
   src.start(t);
 }
 
-export type Sfx = 'tap' | 'coin' | 'harvest' | 'plant' | 'levelup' | 'error' | 'pop' | 'build' | 'cluck' | 'moo' | 'baa' | 'buzz' | 'truck' | 'open' | 'close' | 'collect';
+export type Sfx = 'tap' | 'coin' | 'harvest' | 'plant' | 'levelup' | 'error' | 'pop' | 'build' | 'cluck' | 'moo' | 'baa' | 'buzz' | 'truck' | 'whistle' | 'open' | 'close' | 'collect';
 
 export function sfx(name: Sfx) {
   if (!S.sound) return;
@@ -81,6 +81,13 @@ export function sfx(name: Sfx) {
       case 'baa': for (let i = 0; i < 5; i++) tone(420 + (i % 2) * 30, 0.09, 'sawtooth', 0.04, i * 0.07); break;
       case 'buzz': tone(210, 0.5, 'sawtooth', 0.03, 0, 1.05); break;
       case 'truck': tone(90, 0.6, 'sawtooth', 0.05, 0, 1.6); noise(0.6, 0.08, 300); break;
+      case 'whistle':
+        // парна свирка: акорд с лек шум от парата, два пъти
+        for (const w of [0, 0.75]) {
+          for (const f of [466, 587, 698]) tone(f, w ? 1.1 : 0.45, 'triangle', 0.035, w, 1.004);
+          noise(w ? 1.1 : 0.45, 0.05, 2600, w, 3);
+        }
+        break;
     }
   } catch {}
 }

@@ -91,6 +91,9 @@ export function carBonus() {
   if (S.cars.includes('truck')) pct += 10;
   if (S.cars.includes('hatch')) flat += 5;
   if (S.cars.includes('sedan')) xp += 3;
+  if (S.cars.includes('pickup_red')) pct += 5;
+  if (S.cars.includes('van')) flat += 5;
+  if (S.cars.includes('classic')) xp += 3;
   return { pct, flat, xp };
 }
 
