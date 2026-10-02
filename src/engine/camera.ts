@@ -61,6 +61,17 @@ export class CameraRig {
     });
   }
 
+  /** Текущото плъзгане става „на играта“ (напр. след задържане върху сграда — местим я, а не камерата). */
+  claim() {
+    if (this.gesture) this.gesture.mode = 'game';
+  }
+  gestureMoved() {
+    return !!this.gesture?.moved;
+  }
+  isPressing() {
+    return this.pointers.size === 1 && !!this.gesture;
+  }
+
   /** Наклонът зависи от разстоянието: отблизо камерата е по-ниско (по-красиво), отдалеч гледа повече отгоре. */
   pitchFor(d: number) {
     const t = clamp((d - this.minDist) / (this.maxDist - this.minDist), 0, 1);
@@ -140,7 +151,10 @@ export class CameraRig {
       this.pinch.dist = dist; this.pinch.ang = ang; this.pinch.mid.copy(mid);
       return;
     }
-    if (!g.moved && Math.hypot(cur.x - g.start.x, cur.y - g.start.y) > 9) g.moved = true;
+    if (!g.moved && Math.hypot(cur.x - g.start.x, cur.y - g.start.y) > 9) {
+      g.moved = true;
+      if (g.mode !== 'game') this.input?.onDrag({ x: cur.x, y: cur.y, id: e.pointerId, button: -2 });
+    }
     if (!g.moved) return;
     const p: PointerInfo = { x: cur.x, y: cur.y, id: e.pointerId, button: e.button };
     if (g.mode === 'game') this.input?.onDrag(p);

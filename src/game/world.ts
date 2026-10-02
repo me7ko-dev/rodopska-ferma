@@ -236,8 +236,11 @@ export class Farm implements GameInput {
   }
 
   // ---------- GameInput ----------
+  private longTimer = 0;
+
   onDown(p: PointerInfo) {
     this.suppressTap = false;
+    clearTimeout(this.longTimer);
     if (this.place) {
       const g = this.rig.groundAt(p.x, p.y);
       if (g) {
@@ -251,6 +254,21 @@ export class Farm implements GameInput {
       return false;
     }
     const v = this.pick(p.x, p.y);
+    // задържане с пръст върху обект → местене (като в Hay Day)
+    if (v && !(this.tool?.kind === 'sow' && v.isEmpty?.()) && !v.isReady?.()) {
+      this.longTimer = window.setTimeout(async () => {
+        if (this.rig.gestureMoved() || !this.rig.isPressing() || this.place) return;
+        await this.beginPlace(v.e.type, undefined, v);
+        const pl = this.place as Farm['place'];
+        if (pl) {
+          pl.dragging = true;
+          this.rig.claim();
+          this.suppressTap = true;
+          sfx('pop');
+          if (navigator.vibrate) navigator.vibrate(30);
+        }
+      }, 600);
+    }
     if (v && v.def.kind === 'field') {
       if (this.tool?.kind === 'sow' && v.isEmpty!()) {
         this.brush = true;
@@ -272,6 +290,7 @@ export class Farm implements GameInput {
   }
 
   onDrag(p: PointerInfo) {
+    clearTimeout(this.longTimer);
     if (this.place?.dragging) {
       const g = this.rig.groundAt(p.x, p.y);
       if (g) this.moveGhost(g.x, g.z);
@@ -285,6 +304,7 @@ export class Farm implements GameInput {
   }
 
   onUp() {
+    clearTimeout(this.longTimer);
     if (this.place) this.place.dragging = false;
     if (this.brush) {
       this.brush = false;

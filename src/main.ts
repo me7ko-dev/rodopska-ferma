@@ -14,7 +14,7 @@ import { buildPond } from './world/water';
 import { buildNature } from './world/nature';
 import { POND, FARM, DRIVE } from './world/layout';
 import { fence } from './game/props';
-import { S, save, now } from './game/state';
+import { S, save, now, addXP, addCoins } from './game/state';
 import { BUILDINGS, HOME_TIERS, VILLAGE_HOUSES, ANIMALS, CARS } from './game/data';
 import { Farm } from './game/world';
 import { Village } from './game/village';
@@ -202,7 +202,7 @@ async function boot() {
     for (const h of HOME_TIERS) rest.add(h.model);
     loadAll([...rest]);
   }, 3000);
-  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, S, THREE, icon, ready: true };
+  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, S, THREE, icon, addXP, addCoins, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);
