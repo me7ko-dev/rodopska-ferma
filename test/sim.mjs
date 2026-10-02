@@ -8,6 +8,8 @@ const exe = process.env.CHROME_PATH || (process.env.LOCALAPPDATA + '/ms-playwrig
 const hours = +(process.argv[2] || 3);
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 640, height: 400 } });
+// напредъкът се показва веднага (не чакаме края)
+page.on('console', (m) => { const t = m.text(); if (t.startsWith('§')) console.log(t.slice(1)); });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 // превъртане на времето: Date.now() = истинското + отместване
@@ -16,6 +18,7 @@ await page.addInitScript(() => {
   window.__skip = 0;
   Date.now = () => real() + window.__skip;
 });
+await page.addInitScript(() => localStorage.setItem('rf-quality', 'low'));
 await page.goto(process.env.URL || 'http://localhost:5191/');
 await page.waitForFunction(() => window.__rf?.ready, null, { timeout: 120000 });
 
@@ -26,6 +29,7 @@ const log = await page.evaluate(async (hours) => {
   const { refillOrders, canDeliver, deliver } = rf.mod.orders;
   const farm = rf.farm;
   const out = [];
+  const log = (t) => { out.push(t); console.log('§' + t); };
   let lastLevel = S.level;
   const step = 20; // секунди на ход
   const turns = (hours * 3600) / step;
@@ -102,10 +106,10 @@ const log = await page.evaluate(async (hours) => {
           spend(c[1]);
           await farm.beginPlace(c[0].id);
           farm.confirmPlace();
-          if (c[0].kind !== 'field') out.push(`  ${(t * step / 3600).toFixed(1)} ч: купи ${c[0].name} за ${c[1]}`);
+          if (c[0].kind !== 'field') log(`  ${(t * step / 3600).toFixed(1)} ч: купи ${c[0].name} за ${c[1]}`);
         } else {
           const l = LANDS.find((l) => !S.lands.includes(l.id) && l.level <= S.level);
-          if (l && S.coins >= l.price) { farm.buyLand(l.id); out.push(`  ${(t * step / 3600).toFixed(1)} ч: купи земя ${l.id}`); }
+          if (l && S.coins >= l.price) { farm.buyLand(l.id); log(`  ${(t * step / 3600).toFixed(1)} ч: купи земя ${l.id}`); }
         }
       }
       for (const v of [...farm.views.values()]) if (v.def.kind === 'animal' && v.e.animals.length < (MAX_ANIMALS[v.def.animal] ?? 4) && S.coins > rf.mod.data.ANIMALS[v.def.animal].price * 1.5 + 100) v.buyAnimal();
@@ -122,7 +126,7 @@ const log = await page.evaluate(async (hours) => {
       if (nh && nh.level <= S.level && S.coins > nh.price * 3) { spend(nh.price); S.home++; }
     }
     if (S.level !== lastLevel) {
-      out.push(`${(t * step / 3600).toFixed(1)} ч → НИВО ${S.level}  (монети ${S.coins}, поръчки ${S.stats.orders}, ниви ${farm.byType('field').length}, сгради ${farm.views.size})`);
+      log(`${(t * step / 3600).toFixed(1)} ч → НИВО ${S.level}  (монети ${S.coins}, поръчки ${S.stats.orders}, ниви ${farm.byType('field').length}, сгради ${farm.views.size})`);
       lastLevel = S.level;
     }
   }
