@@ -21,6 +21,9 @@ import { Village } from './game/village';
 import { Vehicles } from './game/vehicles';
 import { People } from './game/npc';
 import { refillOrders } from './game/orders';
+import * as ordersMod from './game/orders';
+import * as dataMod from './game/data';
+import * as stateMod from './game/state';
 import { initFx, setFxScene, updateMarkers, updateBounces, updateSparks } from './game/fx';
 import { bindUI, bindDayNight } from './ui/ui';
 import { icon } from './ui/icons';
@@ -207,7 +210,7 @@ async function boot() {
     for (const h of HOME_TIERS) rest.add(h.model);
     loadAll([...rest]);
   }, 3000);
-  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, S, THREE, icon, addXP, addCoins, ready: true };
+  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);

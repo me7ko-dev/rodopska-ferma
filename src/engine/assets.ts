@@ -90,6 +90,13 @@ export function instance(name: string, size?: number, by: 'max' | 'x' | 'y' | 'z
   wrap.name = name;
   if (!e) {
     console.warn('липсва модел', name);
+    wrap.userData.size = new THREE.Vector3(size ?? 1, size ?? 1, size ?? 1);
+    // зареждаме го и го слагаме, щом пристигне
+    loadModel(name).then(() => {
+      const real = instance(name, size, by);
+      wrap.add(...real.children);
+      wrap.userData.size = real.userData.size;
+    }).catch(() => {});
     return wrap;
   }
   const obj = e.skinned ? SkeletonUtils.clone(e.gltf.scene) : e.gltf.scene.clone(true);
