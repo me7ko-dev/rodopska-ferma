@@ -126,9 +126,9 @@ export class People {
     const board = this.farm.byType('board')[0];
     const base = board ? centerOf(board.e) : new THREE.Vector3(DRIVE.x, 0, FARM.maxZ - 6);
     w.spot = new THREE.Vector3(DRIVE.x - 2.2 - n * 1.6, 0, base.z + 2.5 + n * 0.5);
-    w.obj.position.set(DRIVE.x + (Math.random() < 0.5 ? -60 : 60), 0, ROAD_Z + 4.6);
+    w.obj.position.set(DRIVE.x + (Math.random() < 0.5 ? -18 : 18), 0, ROAD_Z + 4.6);
     w.path = [new THREE.Vector3(DRIVE.x + 1.2, 0, ROAD_Z + 4.6), new THREE.Vector3(DRIVE.x + 1.2, 0, ROAD_Z - 3), new THREE.Vector3(DRIVE.x, 0, w.spot.z + 1.5), w.spot.clone()];
-    w.speed = 2.4;
+    w.speed = 2.9;
     w.mk = marker(new THREE.Vector3(), `<img src="${icon(item)}"><b>${qty}</b>`, 'mk bubble visitor');
     w.mk.onClick = () => this.talk(w);
     this.group.add(w.obj);

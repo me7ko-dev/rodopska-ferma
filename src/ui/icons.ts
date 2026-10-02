@@ -102,6 +102,7 @@ export function icon(id: string): string {
   return '';
 }
 
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 export function img(id: string, cls = 'ic') {
-  return `<img class="${cls}" data-icon="${id}" src="${icon(id)}" alt="" draggable="false">`;
+  return `<img class="${cls}" data-icon="${id}" src="${icon(id) || BLANK}" alt="" draggable="false">`;
 }

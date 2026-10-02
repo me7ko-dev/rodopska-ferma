@@ -198,7 +198,7 @@ function openSeeds(f: View) {
     const lk = c.level > S.level;
     return `<div class="seed ${lk ? 'locked' : ''} ${sel === c.id ? 'on' : ''}" data-act="seed:${c.id}">
       ${lk ? `<div class="lk">Ниво ${c.level}</div>` : ''}
-      <img src="${icon(c.id)}"><div class="n">${ITEMS[c.id].name}</div>
+      ${img(c.id, '')}<div class="n">${ITEMS[c.id].name}</div>
       <div class="s">⏱ ${fmtTime(c.time * (S.cars.includes('tractor') ? 0.9 : 1))} · 🪙${c.seed}</div></div>`;
   }).join('');
   $('#seeds').classList.add('show');
@@ -235,7 +235,7 @@ function fieldInfo(v: View) {
     tip.style.left = s.x + 'px';
     tip.style.top = s.y + 'px';
     const cost = skipCost(left);
-    tip.innerHTML = `<img src="${icon(v.e.crop)}"><div><div>${ITEMS[v.e.crop].name}</div><div style="font-size:13px;color:#8a6440">⏱ ${fmtTime(left)}</div></div><button class="btn xs blue" data-act="tip:skip">${img('diamond', 'ic-sm')}${cost}</button>`;
+    tip.innerHTML = `${img(v.e.crop, '')}<div><div>${ITEMS[v.e.crop].name}</div><div style="font-size:13px;color:#8a6440">⏱ ${fmtTime(left)}</div></div><button class="btn xs blue" data-act="tip:skip">${img('diamond', 'ic-sm')}${cost}</button>`;
   };
   tipAction = (a) => {
     if (a === 'skip') {
@@ -260,12 +260,12 @@ function openProduction(v: View) {
       const q = v.e.queue!, d = v.e.done!;
       const slots = def.slots ?? 2;
       let html = `<div class="panel-desc">${def.desc}</div><div class="queue">`;
-      for (const it of d) html += `<div class="slot done" data-act="collect"><img src="${icon(it.out)}"><div>Готово!</div></div>`;
+      for (const it of d) html += `<div class="slot done" data-act="collect">${img(it.out, '')}<div>Готово!</div></div>`;
       q.forEach((it, i) => {
         const t = now();
         const p = i === 0 ? Math.min(1, (t - it.start) / (it.end - it.start)) : 0;
         const left = (it.end - t) / 1000;
-        html += `<div class="slot busy"><div class="t">${i === 0 ? fmtTime(left) : 'чака'}</div><img src="${icon(it.out)}"><div class="bar"><i style="width:${p * 100}%"></i></div>
+        html += `<div class="slot busy"><div class="t">${i === 0 ? fmtTime(left) : 'чака'}</div>${img(it.out, '')}<div class="bar"><i style="width:${p * 100}%"></i></div>
           ${i === 0 ? `<button class="btn xs blue skip" data-act="skip">${img('diamond', 'ic-sm')}${skipCost(left)}</button>` : ''}</div>`;
       });
       for (let i = q.length; i < slots; i++) html += `<div class="slot">празно</div>`;
@@ -274,9 +274,9 @@ function openProduction(v: View) {
         const it = ITEMS[r.out];
         const lk = it.level > S.level;
         const ok = Object.entries(r.needs).every(([k, n]) => count(k) >= n);
-        html += `<div class="recipe ${lk ? 'locked' : ''}"><img src="${icon(r.out)}"><div class="info">
+        html += `<div class="recipe ${lk ? 'locked' : ''}">${img(r.out, '')}<div class="info">
           <div class="nm">${it.name}${r.qty > 1 ? ` ×${r.qty}` : ''}</div>
-          <div class="needs">${Object.entries(r.needs).map(([k, n]) => `<span class="need ${count(k) < n ? 'miss' : ''}" title="${ITEMS[k].name}"><img src="${icon(k)}">${count(k)}/${n}</span>`).join('')}</div>
+          <div class="needs">${Object.entries(r.needs).map(([k, n]) => `<span class="need ${count(k) < n ? 'miss' : ''}" title="${ITEMS[k].name}">${img(k, '')}${count(k)}/${n}</span>`).join('')}</div>
           <div class="tm">⏱ ${fmtTime(r.time)} · ⭐ ${it.xp * r.qty}</div></div>
           ${lk ? `<b style="font-size:12px">Ниво ${it.level}</b>` : `<button class="btn sm ${ok && q.length < slots ? '' : 'gray'}" data-act="make" data-i="${i}">Направи</button>`}</div>`;
       });
@@ -323,11 +323,11 @@ function openStorage(silo: boolean) {
       const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && isSiloItem(k) === isSilo).sort((a, b) => ITEMS[a[0]].level - ITEMS[b[0]].level);
       let html = `<div class="capbar ${u >= c ? 'full' : ''}"><i style="width:${Math.min(100, (u / c) * 100)}%"></i><span class="outl">${u} / ${c}</span></div>`;
       if (!items.length) html += `<div class="empty">Празно е. ${isSilo ? 'Ожъни нивите!' : 'Събери продукти от животните и работилниците.'}</div>`;
-      html += `<div class="inv">${items.map(([k, n]) => `<div class="invi ${sel === k ? 'sel' : ''}" data-act="sel" data-k="${k}" title="${ITEMS[k].name}"><img src="${icon(k)}"><b class="outl">${n}</b></div>`).join('')}</div>`;
+      html += `<div class="inv">${items.map(([k, n]) => `<div class="invi ${sel === k ? 'sel' : ''}" data-act="sel" data-k="${k}" title="${ITEMS[k].name}">${img(k, '')}<b class="outl">${n}</b></div>`).join('')}</div>`;
       if (sel && count(sel) > 0) {
         qty = Math.min(qty, count(sel));
         const it = ITEMS[sel];
-        html += `<div class="sellbox"><img class="ic-md" src="${icon(sel)}"><b>${it.name}</b>
+        html += `<div class="sellbox">${img(sel, 'ic-md')}<b>${it.name}</b>
           <div class="qty"><button data-act="qm">−</button><span>${qty}</span><button data-act="qp">+</button><button data-act="qa" style="width:auto;padding:0 10px;border-radius:12px;font-size:14px">всички</button></div>
           <button class="btn gold" data-act="sell">Продай за ${img('coin')}${fmt(it.price * qty)}</button></div>`;
       }
@@ -383,7 +383,7 @@ function openOrders() {
         }
         const ok = canDeliver(o);
         html += `<div class="order ${ok ? 'ok' : ''}"><div class="who">${o.who}</div>
-          <div class="its">${Object.entries(o.items).map(([k, n]) => `<span class="need ${count(k) < n ? 'miss' : ''}" title="${ITEMS[k].name}"><img src="${icon(k)}">${count(k)}/${n}</span>`).join('')}</div>
+          <div class="its">${Object.entries(o.items).map(([k, n]) => `<span class="need ${count(k) < n ? 'miss' : ''}" title="${ITEMS[k].name}">${img(k, '')}${count(k)}/${n}</span>`).join('')}</div>
           <div class="rew">${coinsHtml(Math.round(o.coins * (1 + b.pct / 100)) + b.flat)} <span class="price">${img('star', 'ic-sm')}${o.xp + b.xp}</span></div>
           <div class="row"><button class="btn sm ${ok ? '' : 'gray'}" data-act="send" data-i="${i}">🚚 Изпрати</button><span class="sp"></span><button class="btn xs red" data-act="trash" data-i="${i}" title="Махни">🗑</button></div></div>`;
       });
@@ -436,7 +436,7 @@ function openShop() {
       const tab = current!.tab;
       let list: BuildingDef[] = [];
       if (tab === 'build') list = Object.values(BUILDINGS).filter((b) => (b.kind === 'production' || b.kind === 'special') && b.price > 0);
-      if (tab === 'animal') list = Object.values(BUILDINGS).filter((b) => b.kind === 'animal');
+      if (tab === 'animal') list = Object.values(BUILDINGS).filter((b) => b.kind === 'animal' || b.kind === 'pet');
       if (tab === 'field') list = Object.values(BUILDINGS).filter((b) => b.kind === 'field' || b.kind === 'tree');
       if (tab === 'deco') list = Object.values(BUILDINGS).filter((b) => b.kind === 'deco');
       list.sort((a, b) => a.level - b.level);
@@ -445,7 +445,7 @@ function openShop() {
         const owned = C.farm.byType(b.id).length;
         const price = b.kind === 'field' ? fieldPrice() : b.price;
         const soldOut = (b.unique && owned > 0) || (b.kind === 'field' && owned >= maxFields());
-        const ic = b.kind === 'field' ? img('wheat', 'ic') : b.kind === 'animal' ? img('animal:' + b.animal, 'ic') : img('b:' + b.id, 'ic');
+        const ic = b.kind === 'field' ? img('wheat', 'ic') : b.kind === 'animal' ? img('animal:' + b.animal, 'ic') : b.kind === 'pet' ? img('m:' + b.model, 'ic') : img('b:' + b.id, 'ic');
         return `<div class="card ${lk || soldOut ? 'locked' : ''}" data-act="buy" data-id="${b.id}">
           ${lk ? `<div class="lock">Ниво ${b.level}</div>` : ''}${owned ? `<div class="own">${b.kind === 'field' ? `${owned}/${maxFields()}` : owned}</div>` : ''}
           ${ic}<div class="nm">${b.name}</div>
@@ -489,9 +489,9 @@ function openAnimals(v: View) {
       list.forEach((s, i) => {
         const ready = s.ready != null && now() >= s.ready;
         const status = ready ? 'Готово! Натисни за събиране' : s.fed != null ? `⏱ ${fmtTime(((s.ready ?? 0) - now()) / 1000)}` : a.feed ? 'Гладно — нахрани' : '';
-        html += `<div class="card"><img class="ic" src="${icon(ready ? a.product : 'animal:' + v.def.animal)}"><div class="nm">${a.name} ${i + 1}</div><div class="sub">${status}</div></div>`;
+        html += `<div class="card">${img(ready ? a.product : 'animal:' + v.def.animal, 'ic')}<div class="nm">${a.name} ${i + 1}</div><div class="sub">${status}</div></div>`;
       });
-      if (list.length < max) html += `<div class="card" data-act="buyan"><img class="ic" src="${icon('animal:' + v.def.animal)}"><div class="nm">Купи ${a.name.toLowerCase()}</div><div class="price">${img('coin')}${fmt(a.price)}</div></div>`;
+      if (list.length < max) html += `<div class="card" data-act="buyan">${img('animal:' + v.def.animal, 'ic')}<div class="nm">Купи ${a.name.toLowerCase()}</div><div class="price">${img('coin')}${fmt(a.price)}</div></div>`;
       html += '</div><div class="btns">';
       if (a.feed) html += `<button class="btn" data-act="feed">${img(a.feed)} Нахрани (${count(a.feed)})</button>`;
       html += `<button class="btn gold" data-act="collect">${img(a.product)} Събери</button><button class="btn sm blue" data-act="move">✥ Премести</button></div>`;
@@ -516,7 +516,7 @@ function openTree(v: View) {
     small: true,
     render: () => {
       const left = ((v.e.ready ?? 0) - now()) / 1000;
-      return `<div class="big-ic"><img class="ic-lg" src="${icon(t.fruit)}"></div><div class="center"><b>${ITEMS[t.fruit].name}</b> ×${t.yield}<br>⏱ ${fmtTime(left)}</div>
+      return `<div class="big-ic">${img(t.fruit, 'ic-lg')}</div><div class="center"><b>${ITEMS[t.fruit].name}</b> ×${t.yield}<br>⏱ ${fmtTime(left)}</div>
         <div class="btns"><button class="btn blue" data-act="skip">${img('diamond')} ${skipCost(left)} Веднага</button><button class="btn sm blue" data-act="move">✥ Премести</button></div>`;
     },
     actions: {
@@ -529,7 +529,7 @@ function openTree(v: View) {
 function openDeco(v: View) {
   const refund = Math.floor(v.def.price / 2);
   open(v.def.name, {
-    render: () => `<div class="big-ic"><img class="ic-lg" src="${icon('b:' + v.def.id)}"></div><div class="panel-desc">${v.def.desc}</div>
+    render: () => `<div class="big-ic">${img('b:' + v.def.id, 'ic-lg')}</div><div class="panel-desc">${v.def.desc}</div>
       <div class="btns"><button class="btn blue" data-act="move">✥ Премести</button>${refund ? `<button class="btn red" data-act="sell">Продай за ${img('coin')}${refund}</button>` : ''}</div>`,
     actions: {
       move: () => { close(); C.farm.beginPlace(v.e.type, undefined, v); },
@@ -549,11 +549,11 @@ function openHome() {
         const tier = HOME_TIERS[S.home];
         const next = HOME_TIERS[S.home + 1];
         const daily = new Date(S.lastDaily).toDateString() !== new Date().toDateString();
-        let html = `<div class="big-ic"><img class="ic-lg" src="${icon('m:' + tier.model)}"></div><div class="center"><b style="font-size:20px">${tier.name}</b><br>Всеки ден носи ${coinsHtml(tier.daily)}</div>`;
+        let html = `<div class="big-ic">${img('m:' + tier.model, 'ic-lg')}</div><div class="center"><b style="font-size:20px">${tier.name}</b><br>Всеки ден носи ${coinsHtml(tier.daily)}</div>`;
         html += `<div class="btns"><button class="btn gold ${daily ? '' : 'gray'}" data-act="daily">${daily ? `Вземи днешните ${fmt(tier.daily)} монети` : 'Днешните монети са взети ✓'}</button></div>`;
         if (next) {
           const lk = next.level > S.level;
-          html += `<div class="card mt" style="flex-direction:row;cursor:default;text-align:left"><img class="ic" src="${icon('m:' + next.model)}"><div class="sp"><div class="nm">Следваща: ${next.name}</div><div class="sub">Носи ${fmt(next.daily)} монети на ден</div></div>
+          html += `<div class="card mt" style="flex-direction:row;cursor:default;text-align:left">${img('m:' + next.model, 'ic')}<div class="sp"><div class="nm">Следваща: ${next.name}</div><div class="sub">Носи ${fmt(next.daily)} монети на ден</div></div>
             ${lk ? `<b>Ниво ${next.level}</b>` : `<button class="btn" data-act="upgrade">Построй за ${img('coin')}${fmt(next.price)}</button>`}</div>`;
         } else html += `<div class="panel-desc mt">Имаш най-хубавата къща в Родопите! 🏆</div>`;
         return html;
@@ -563,7 +563,7 @@ function openHome() {
         const owned = !!S.village[i];
         const lk = h.level > S.level;
         html += `<div class="card ${lk && !owned ? 'locked' : ''}" data-act="vh" data-i="${i}">${lk && !owned ? `<div class="lock">Ниво ${h.level}</div>` : ''}${owned ? '<div class="own">Твоя</div>' : ''}
-          <img class="ic" src="${icon('m:' + h.model)}"><div class="nm">${h.name}</div><div class="sub">${fmt(h.rent)} 🪙 на час</div>
+          ${img('m:' + h.model, 'ic')}<div class="nm">${h.name}</div><div class="sub">${fmt(h.rent)} 🪙 на час</div>
           ${owned ? `<div class="price">Наем: ${img('coin')}${fmt(rentDue(i))}</div>` : `<div class="price">${img('coin')}${fmt(h.price)}</div>`}</div>`;
       });
       html += `</div><div class="btns"><button class="btn blue" data-act="go">🗺 Иди в селото</button><button class="btn gold" data-act="rentall">Събери целия наем</button></div>`;
@@ -611,7 +611,7 @@ function openVillageHouse(i: number) {
     live: true,
     render: () => {
       const owned = !!S.village[i];
-      let html = `<div class="big-ic"><img class="ic-lg" src="${icon('m:' + h.model)}"></div><div class="center">Носи <b>${fmt(h.rent)}</b> монети на час</div>`;
+      let html = `<div class="big-ic">${img('m:' + h.model, 'ic-lg')}</div><div class="center">Носи <b>${fmt(h.rent)}</b> монети на час</div>`;
       if (owned) html += `<div class="center mt">Натрупан наем: ${coinsHtml(rentDue(i))}</div><div class="btns"><button class="btn gold" data-act="collect">Събери наема</button></div>`;
       else if (h.level > S.level) html += `<div class="center mt"><b>Отключва се на ниво ${h.level}</b></div>`;
       else html += `<div class="btns"><button class="btn" data-act="buy">Купи за ${img('coin')}${fmt(h.price)}</button></div>`;
@@ -647,7 +647,7 @@ function openGarage() {
       const owned = S.cars.includes(c.id);
       const lk = c.level > S.level;
       return `<div class="card ${lk && !owned ? 'locked' : ''}">${lk && !owned ? `<div class="lock">Ниво ${c.level}</div>` : ''}${owned ? '<div class="own">Твоя</div>' : ''}
-        <img class="ic" src="${icon('car:' + c.id)}"><div class="nm">${c.name}</div><div class="sub">${c.bonus}</div><div class="sub">до ${c.speed} км/ч</div>
+        ${img('car:' + c.id, 'ic')}<div class="nm">${c.name}</div><div class="sub">${c.bonus}</div><div class="sub">до ${c.speed} км/ч</div>
         ${owned ? `<button class="btn sm" data-act="drive" data-id="${c.id}">🚗 Карай</button>` : lk ? '' : `<button class="btn sm gold" data-act="buy" data-id="${c.id}">${c.diamonds ? `${img('diamond')}${c.diamonds}` : `${img('coin')}${fmt(c.price)}`}</button>`}</div>`;
     }).join('')}</div>`,
     actions: {
@@ -692,7 +692,7 @@ function openMarket() {
       return `<div class="panel-desc">Хората на пазара в Гърмен търсят тези стоки и плащат повече! Нови след ⏱ ${fmtTime(left)}.</div><div class="orders">${deals.map((d, i) => {
         const rest = d.qty - (sold[d.id] ?? 0);
         const it = ITEMS[d.id];
-        return `<div class="order ${rest > 0 && count(d.id) > 0 ? 'ok' : ''}"><div class="row"><img class="ic-md" src="${icon(d.id)}"><div><b>${it.name}</b><div class="sub">×${d.mult.toFixed(1)} цена · търсят още ${Math.max(0, rest)}</div></div></div>
+        return `<div class="order ${rest > 0 && count(d.id) > 0 ? 'ok' : ''}"><div class="row">${img(d.id, 'ic-md')}<div><b>${it.name}</b><div class="sub">×${d.mult.toFixed(1)} цена · търсят още ${Math.max(0, rest)}</div></div></div>
           <div class="rew">1 бр. = ${coinsHtml(Math.round(it.price * d.mult))}</div>
           <button class="btn sm ${rest > 0 && count(d.id) > 0 ? '' : 'gray'}" data-act="sell" data-i="${i}">Продай 1 (имаш ${count(d.id)})</button></div>`;
       }).join('') || '<div class="empty">Още няма какво да продаваш. Ожъни нещо!</div>'}</div>`;
@@ -721,7 +721,7 @@ function openMarket() {
 // ПОСЕТИТЕЛ
 function openVisitor(v: { item: string; qty: number; coins: number; xp: number; name: string }, accept: () => void, decline: () => void) {
   open(v.name, {
-    render: () => `<div class="center">Здравей! Ще ми продадеш ли</div><div class="big-ic"><img class="ic-lg" src="${icon(v.item)}"></div>
+    render: () => `<div class="center">Здравей! Ще ми продадеш ли</div><div class="big-ic">${img(v.item, 'ic-lg')}</div>
       <div class="center"><b style="font-size:20px">${ITEMS[v.item].name} × ${v.qty}</b><br>Имаш: ${count(v.item)}</div>
       <div class="center mt">Плащам ${coinsHtml(v.coins)} и ${img('star', 'ic-sm')} ${v.xp}</div>
       <div class="btns"><button class="btn ${count(v.item) >= v.qty ? '' : 'gray'}" data-act="yes">Продай</button><button class="btn red" data-act="no">Не, благодаря</button></div>`,
@@ -787,16 +787,16 @@ function openProfile() {
         const val = achValue(a.id);
         const ready = !done && val >= goal;
         const stars = '★'.repeat(got) + '☆'.repeat(a.tiers.length - got);
-        html += `<div class="order ${ready ? 'ok' : ''}"><div class="row"><img class="ic-md" src="${icon(a.icon)}"><div><b>${a.name}</b> <span style="color:#e0a800">${stars}</span>
+        html += `<div class="order ${ready ? 'ok' : ''}"><div class="row">${img(a.icon, 'ic-md')}<div><b>${a.name}</b> <span style="color:#e0a800">${stars}</span>
           <div class="sub" style="font-size:12.5px;color:#8a6440">${a.desc.replace('{n}', fmt(goal))}</div></div></div>
           <div class="capbar" style="margin:2px 0"><i style="width:${Math.min(100, (val / goal) * 100)}%"></i><span class="outl">${fmt(Math.min(val, goal))} / ${fmt(goal)}</span></div>
           ${done ? '<b class="center">Завършено! 🏆</b>' : `<button class="btn sm ${ready ? 'gold' : 'gray'}" data-act="claim" data-id="${a.id}">Вземи ${img('diamond')} ${a.reward[got]}</button>`}</div>`;
       }
       html += `</div><div class="grid mt">
-        <div class="card"><img class="ic" src="${icon('wheat')}"><div class="nm">Ожънато</div><b>${fmt(S.stats.harvested)}</b></div>
-        <div class="card"><img class="ic" src="${icon('bread')}"><div class="nm">Произведено</div><b>${fmt(S.stats.produced)}</b></div>
-        <div class="card"><img class="ic" src="${icon('b:board')}"><div class="nm">Поръчки</div><b>${fmt(S.stats.orders)}</b></div>
-        <div class="card"><img class="ic" src="${icon('coin')}"><div class="nm">Спечелени монети</div><b>${fmt(S.stats.earned)}</b></div>
+        <div class="card">${img('wheat', 'ic')}<div class="nm">Ожънато</div><b>${fmt(S.stats.harvested)}</b></div>
+        <div class="card">${img('bread', 'ic')}<div class="nm">Произведено</div><b>${fmt(S.stats.produced)}</b></div>
+        <div class="card">${img('b:board', 'ic')}<div class="nm">Поръчки</div><b>${fmt(S.stats.orders)}</b></div>
+        <div class="card">${img('coin', 'ic')}<div class="nm">Спечелени монети</div><b>${fmt(S.stats.earned)}</b></div>
       </div>`;
       return html;
     },
@@ -845,7 +845,7 @@ function levelUp() {
     open('Ново ниво!', {
       render: () => `<div class="lvlup"><div class="big outl">Ниво ${lv}</div>
         <div class="center">Награда: ${diaHtml(dia)} и ${coinsHtml(lv * 15)}</div>
-        ${unl.length ? `<div class="mt"><b>Отключено:</b></div><div class="unl">${unl.map((u) => `<div><img src="${icon(u.icon === 'home' ? 'm:house_red1' : u.icon === 'land' ? 'm:n_tree5' : u.icon)}"><br>${u.name}</div>`).join('')}</div>` : ''}
+        ${unl.length ? `<div class="mt"><b>Отключено:</b></div><div class="unl">${unl.map((u) => `<div>${img(u.icon === 'home' ? 'm:house_red1' : u.icon === 'land' ? 'm:n_tree5' : u.icon, '')}<br>${u.name}</div>`).join('')}</div>` : ''}
         <div class="btns"><button class="btn" data-act="close">Супер!</button></div></div>`,
       actions: {},
     }, true);
@@ -901,7 +901,7 @@ function showGuide() {
   const g = $('#guide');
   if (S.tut >= GUIDE.length) { g.classList.remove('show'); return; }
   const step = GUIDE[Math.max(0, S.tut)];
-  g.innerHTML = `<img src="${icon(step.icon)}"><span>${step.text}</span>`;
+  g.innerHTML = `${img(step.icon, '')}<span>${step.text}</span>`;
   g.classList.add('show');
   if (S.tut === GUIDE.length - 1) setTimeout(() => { if (S.tut === GUIDE.length - 1) { S.tut = GUIDE.length; save(); g.classList.remove('show'); } }, 9000);
 }
@@ -950,7 +950,7 @@ export function bindUI(ctx: Ctx) {
     sowMode(crop: string | null) {
       const h = $('#sowhint');
       if (crop) {
-        $('#sowhint-t').innerHTML = `<img class="ic-sm" src="${icon(crop)}"> Плъзни по празните ниви, за да засееш ${ITEMS[crop].name.toLowerCase()}`;
+        $('#sowhint-t').innerHTML = `${img(crop, 'ic-sm')} Плъзни по празните ниви, за да засееш ${ITEMS[crop].name.toLowerCase()}`;
         h.classList.add('show');
       } else h.classList.remove('show');
     },

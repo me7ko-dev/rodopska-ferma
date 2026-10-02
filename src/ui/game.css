@@ -56,7 +56,7 @@
 /* ---------- бутони ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 6px 16px; border-radius: 14px; border: 3px solid #fff3d6; background: linear-gradient(#8ee05f, #48a52a); box-shadow: 0 4px 0 #2b6e16; font-family: inherit; font-weight: 800; font-size: 16px; cursor: pointer; color: #fff; text-shadow: 0 2px 0 rgba(30,70,10,.8); transition: transform .08s; white-space: nowrap; }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #2b6e16; }
-.btn img { width: 26px; height: 26px; margin: -4px 0; }
+.btn img, .card .btn img, .card .btn .ic { width: 26px; height: 26px; margin: -4px 0; filter: none; }
 .btn.blue { background: linear-gradient(#7cc8ff, #2f8fdc); box-shadow: 0 4px 0 #1b5f99; text-shadow: 0 2px 0 rgba(10,40,80,.8); }
 .btn.red { background: linear-gradient(#ff8f7a, #d9432c); box-shadow: 0 4px 0 #8f2414; text-shadow: 0 2px 0 rgba(80,10,0,.7); }
 .btn.gold { background: linear-gradient(#ffe27a, #f0a81a); box-shadow: 0 4px 0 #a86a08; text-shadow: 0 2px 0 rgba(100,50,0,.7); }

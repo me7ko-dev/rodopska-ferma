@@ -119,7 +119,7 @@ export interface BuildingDef {
   price: number;
   slots?: number; // колко неща може да се правят на опашка
   recipes?: Recipe[];
-  kind: 'production' | 'storage' | 'animal' | 'special' | 'deco' | 'tree' | 'field';
+  kind: 'production' | 'storage' | 'animal' | 'special' | 'deco' | 'tree' | 'field' | 'pet';
   animal?: string;
   unique?: boolean;
   tint?: string; // пребоядисване на покрива/стените
@@ -236,6 +236,16 @@ deco('d_pine', 'Бор', 'n_pine4', 7, [3, 3], 3, 60);
 deco('d_rock', 'Камък', 'n_rock1', 1.6, [2, 2], 1, 15);
 deco('d_lavender', 'Лавандулов храст', 'n_plant_big2', 1.4, [2, 2], 4, 40);
 deco('d_scarecrow', 'Плашило', 'm_farmer', 2.2, [1, 1], 3, 70);
+
+// любимци — тичат свободно из фермата
+const pet = (id: string, name: string, model: string, size: number, level: number, price: number, desc: string) =>
+  b({ id, name, desc, model, size, foot: [2, 2], level, price, kind: 'pet' });
+pet('pet_dog', 'Куче Шиба', 'dog_shiba', 1.5, 3, 300, 'Весело куче, което тича из фермата.');
+pet('pet_husky', 'Хъски', 'dog_husky', 1.7, 6, 700, 'Пухкаво хъски — пази фермата.');
+pet('pet_donkey', 'Магаре', 'donkey', 2.4, 5, 900, 'Родопско магаре — пасе край нивите.');
+pet('pet_horse', 'Кон', 'horse', 3, 9, 2000, 'Красив кафяв кон.');
+pet('pet_whitehorse', 'Бял кон', 'horse_white', 3, 12, 3500, 'Бял кон — гордостта на фермата.');
+pet('pet_alpaca', 'Алпака', 'alpaca', 2.4, 14, 4000, 'Смешна алпака.');
 
 // --- коли ---
 export interface CarDef {

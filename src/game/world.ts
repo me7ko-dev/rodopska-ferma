@@ -149,6 +149,7 @@ export class Farm implements GameInput {
       case 'production': v = new ProductionView(e, def, this); break;
       case 'animal': v = new PenView(e, def, this); break;
       case 'tree': v = new TreeView(e, def, this); break;
+      case 'pet': v = new PetView(e, def, this); break;
       default: v = new BasicView(e, def, this);
     }
     this.positionView(v);
@@ -160,6 +161,7 @@ export class Farm implements GameInput {
   }
 
   positionView(v: View) {
+    if (v.def.kind === 'pet') (v as unknown as { model: THREE.Object3D }).model.position.set(0, 0, 0);
     const c = centerOf(v.e);
     v.root.position.set(c.x, 0, c.z);
     v.root.rotation.y = -v.e.rot * (Math.PI / 2);
@@ -1041,6 +1043,103 @@ class TreeView implements View {
   dispose() { removeMarker(this.mk); }
 }
 
-export { FieldView, ProductionView, PenView, TreeView, BasicView };
+// =====================================================================
+// ЛЮБИМЕЦ: тича из фермата по свободните клетки
+class PetView implements View {
+  root = new THREE.Group();
+  proxy: THREE.Mesh;
+  height = 1.5;
+  model: THREE.Group;
+  mixer: THREE.AnimationMixer | null = null;
+  walk?: THREE.AnimationAction;
+  run?: THREE.AnimationAction;
+  idle?: THREE.AnimationAction;
+  eat?: THREE.AnimationAction;
+  target: THREE.Vector3 | null = null;
+  wait = 1;
+  speed = 1.6;
+  constructor(public e: Entity, public def: BuildingDef, public farm: Farm) {
+    this.model = instance(def.model, def.size);
+    this.root.add(this.model);
+    this.height = (this.model.userData.size as THREE.Vector3)?.y ?? 1.5;
+    this.proxy = makeProxy(this, 2, this.height + 0.5, 2);
+    this.proxy.position.y = (this.height + 0.5) / 2;
+    this.model.add(this.proxy);
+    if (animationsOf(def.model).length) {
+      this.mixer = new THREE.AnimationMixer(this.model);
+      const w = clipBy(def.model, 'Walk'), r = clipBy(def.model, 'Gallop'), i = clipBy(def.model, 'Idle'), ea = clipBy(def.model, 'Eating');
+      if (w) this.walk = this.mixer.clipAction(w);
+      if (r) this.run = this.mixer.clipAction(r);
+      if (i) this.idle = this.mixer.clipAction(i);
+      if (ea) this.eat = this.mixer.clipAction(ea);
+      this.idle?.play();
+    }
+  }
+  /** Свободна точка наблизо, до която пътят не минава през сгради. */
+  pickTarget() {
+    const base = this.root.position.clone().add(this.model.position);
+    for (let k = 0; k < 25; k++) {
+      const a = Math.random() * Math.PI * 2, d = 3 + Math.random() * 9;
+      const t = new THREE.Vector3(base.x + Math.cos(a) * d, 0, base.z + Math.sin(a) * d);
+      let ok = true;
+      for (let s = 0; s <= 10 && ok; s++) {
+        const x = Math.floor(base.x + (t.x - base.x) * (s / 10)), z = Math.floor(base.z + (t.z - base.z) * (s / 10));
+        if (x < FARM.minX || z < FARM.minZ || x >= FARM.maxX || z >= FARM.maxZ || !this.farm.unlocked(x, z)) ok = false;
+        else {
+          const o = this.farm.grid[this.farm.idx(x, z)];
+          if (o && o !== this.e.uid) {
+            const ov = this.farm.views.get(o);
+            if (ov && ov.def.kind !== 'deco' && ov.def.kind !== 'pet') ok = false;
+          }
+        }
+      }
+      if (ok) return t;
+    }
+    return null;
+  }
+  tap() {
+    sfx(this.def.model.startsWith('dog') ? 'pop' : 'tap');
+    // скача от радост и тръгва нанякъде
+    this.wait = 0;
+    UI.openDeco(this);
+  }
+  update(t: number, dt: number) {
+    this.mixer?.update(dt);
+    const m = this.model;
+    if (this.target) {
+      const wp = this.root.position.clone().add(m.position);
+      const dx = this.target.x - wp.x, dz = this.target.z - wp.z, d = Math.hypot(dx, dz);
+      if (d < 0.15) {
+        this.target = null;
+        this.wait = 2 + Math.random() * 6;
+        this.walk?.fadeOut(0.3); this.run?.fadeOut(0.3);
+        (Math.random() < 0.4 && this.eat ? this.eat : this.idle)?.reset().fadeIn(0.3).play();
+      } else {
+        const s = Math.min(d, this.speed * dt);
+        m.position.x += (dx / d) * s;
+        m.position.z += (dz / d) * s;
+        let da = Math.atan2(dx, dz) - (m.rotation.y + this.root.rotation.y);
+        while (da > Math.PI) da -= Math.PI * 2;
+        while (da < -Math.PI) da += Math.PI * 2;
+        m.rotation.y += da * Math.min(1, dt * 6);
+      }
+    } else {
+      this.wait -= dt;
+      if (this.wait <= 0) {
+        this.target = this.pickTarget();
+        this.wait = 2;
+        if (this.target) {
+          const fast = this.run && Math.random() < 0.3;
+          this.speed = fast ? 4.2 : 1.6;
+          this.idle?.fadeOut(0.3); this.eat?.fadeOut(0.3);
+          (fast ? this.run : this.walk)?.reset().fadeIn(0.3).play();
+        }
+      }
+    }
+  }
+  dispose() {}
+}
+
+export { FieldView, ProductionView, PenView, TreeView, BasicView, PetView };
 export const ensureModels = async (names: string[]) => { await Promise.all(names.filter((n) => n && !has(n)).map((n) => loadModel(n))); };
 export { emit };
