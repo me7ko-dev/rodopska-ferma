@@ -234,8 +234,24 @@ async function boot() {
 
 // офлайн режим (само в публикуваната версия)
 if (import.meta.env.PROD && 'serviceWorker' in navigator && location.protocol === 'https:') {
-  addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  addEventListener('load', () => navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {}));
 }
+
+/** Ако на сайта вече има по-нова версия, презареждаме веднага (за да не се играе старата). */
+async function checkUpdate() {
+  if (!import.meta.env.PROD || location.protocol !== 'https:') return;
+  try {
+    const html = await (await fetch('./?v=' + Date.now(), { cache: 'no-store' })).text();
+    const latest = html.match(/assets\/index-[\w-]+\.js/)?.[0];
+    const mine = [...document.scripts].map((s) => s.src).find((s) => /assets\/index-/.test(s));
+    if (!latest || !mine || mine.includes(latest)) return;
+    if (sessionStorage.getItem('rf-upd') === latest) return; // веднъж, без безкраен цикъл
+    sessionStorage.setItem('rf-upd', latest);
+    location.reload();
+  } catch { /* без интернет — играем каквото имаме */ }
+}
+checkUpdate();
+addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 
 boot().catch((e) => {
   console.error(e);

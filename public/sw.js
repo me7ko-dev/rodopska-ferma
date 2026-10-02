@@ -1,5 +1,5 @@
 // Офлайн режим: пази файловете на играта, за да тръгва и без интернет.
-const CACHE = 'rodopska-ferma-v1';
+const CACHE = 'rodopska-ferma-v2';
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest', './icon-192.png'])).catch(() => {}));
@@ -12,7 +12,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || !req.url.startsWith(self.location.origin)) return;
   // страницата — първо от мрежата (за да идват обновленията), иначе от кеша
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then((r) => { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); return r; }).catch(() => caches.match(req).then((r) => r || caches.match('./'))));
+    // cache: 'no-cache' — винаги питаме сървъра дали има нова версия (иначе браузърът дава старата до 10 мин.)
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then((r) => { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); return r; }).catch(() => caches.match(req).then((r) => r || caches.match('./'))));
     return;
   }
   // всичко останало (модели, код, шрифтове) — от кеша, ако го има
