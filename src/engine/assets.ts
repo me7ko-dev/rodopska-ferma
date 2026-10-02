@@ -33,10 +33,12 @@ function fixMaterials(root: THREE.Object3D) {
       if (mat.transparent && mat.map) {
         mat.transparent = false;
         mat.alphaTest = 0.45;
+        // с MSAA листата и тревата получават меки ръбове вместо назъбени точки
+        mat.alphaToCoverage = true;
         mat.depthWrite = true;
         mat.side = THREE.DoubleSide;
       }
-      if (mat.map) mat.map.anisotropy = 4;
+      if (mat.map) mat.map.anisotropy = 8;
     }
   });
 }

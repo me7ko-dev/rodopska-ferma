@@ -31,17 +31,28 @@ export class Engine {
   private last = performance.now();
   private sunOffset = new THREE.Vector3(-38, 62, 30);
   fps = 60;
+  /** Динамична резолюция: рисуваме възможно най-рязко, без да падат кадрите. */
+  private prMax = 1;
+  private prMin = 1;
+  private prCeil = 1;
+  private pr = 1;
+  private prSlow = 0;
+  private prGood = 0;
+  private prStart = performance.now();
+  private prSpan = 3000;
+  private prFrames = 0;
 
   constructor(public canvas: HTMLCanvasElement) {
     this.quality = detectQuality();
     QUALITY.value = this.quality;
-    const r = new THREE.WebGLRenderer({ canvas, antialias: this.quality !== 'low', powerPreference: 'high-performance', stencil: false });
+    // изглаждане на ръбовете (MSAA) винаги — без него всичко е назъбено и „на точки“
+    const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false });
     this.renderer = r;
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.NeutralToneMapping;
     r.toneMappingExposure = 1.0;
     r.shadowMap.enabled = true;
-    r.shadowMap.type = this.quality === 'low' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+    r.shadowMap.type = THREE.PCFSoftShadowMap;
     this.applyPixelRatio();
 
     this.camera = new THREE.PerspectiveCamera(32, 1, 1, 1600);
@@ -56,7 +67,7 @@ export class Engine {
 
     const sun = new THREE.DirectionalLight(0xfff1dc, 2.75);
     sun.castShadow = true;
-    const ms = this.quality === 'high' ? 4096 : this.quality === 'medium' ? 2048 : 1024;
+    const ms = this.quality === 'high' ? 4096 : 2048;
     sun.shadow.mapSize.set(ms, ms);
     const sc = sun.shadow.camera;
     sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 260;
@@ -71,8 +82,56 @@ export class Engine {
   }
 
   applyPixelRatio() {
-    const cap = this.quality === 'high' ? 2 : this.quality === 'medium' ? 1.5 : 1;
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, cap));
+    const dpr = devicePixelRatio || 1;
+    // На екран с ниска плътност (обикновен монитор) рисуваме по-едро и смаляваме — още по-гладки ръбове
+    const cap = this.quality === 'high' ? 3 : this.quality === 'medium' ? 2.5 : 2;
+    this.prMax = Math.min(Math.max(dpr, this.quality === 'high' ? 1.5 : 1), cap);
+    this.prMin = Math.min(this.prMax, this.quality === 'low' ? 0.85 : 1);
+    this.prCeil = this.prMax;
+    this.setPR(this.prMax);
+  }
+
+  private setPR(v: number) {
+    v = Math.round(Math.min(this.prCeil, Math.max(this.prMin, v)) * 100) / 100;
+    if (v === this.pr && this.renderer.getPixelRatio() === v) return;
+    this.pr = v;
+    this.renderer.setPixelRatio(v);
+    this.renderer.setSize(innerWidth, innerHeight, false);
+  }
+
+  /** Веднъж в секунда: ако кадрите не стигат — малко по-ниска резолюция; ако има запас — по-висока. */
+  private adaptResolution(now: number) {
+    this.prFrames++;
+    const span = now - this.prStart;
+    if (span < this.prSpan) return;
+    // истински кадри в секунда за последния интервал (не изгладени и не орязани)
+    const fps = (this.prFrames * 1000) / span;
+    this.prFrames = 0;
+    this.prStart = now;
+    this.prSpan = 1000;
+    if (document.hidden || span > 5000) return; // скрит раздел или пауза — не съдим
+    const step = 0.25;
+    if (fps < 48) {
+      if (++this.prSlow >= 2 && this.pr > this.prMin) {
+        // нивото, на което не стигна, става таван (за да не скача напред-назад)
+        this.prCeil = Math.max(this.prMin, this.pr - step);
+        this.setPR(this.pr - (fps < 35 ? 2 * step : step));
+        this.prSlow = 0;
+        this.prGood = 0;
+        this.prSpan = 2000; // новата резолюция се успокоява
+      }
+      return;
+    }
+    this.prSlow = 0;
+    if (fps > 56) {
+      this.prGood++;
+      // след дълго спокойствие таванът бавно се вдига обратно
+      if (this.prGood % 30 === 0 && this.prCeil < this.prMax) this.prCeil = Math.min(this.prMax, this.prCeil + step);
+      if (this.prGood >= 4 && this.pr < this.prCeil) {
+        this.setPR(this.pr + step);
+        this.prGood = 0;
+      }
+    } else this.prGood = 0;
   }
 
   setQuality(q: Quality) {
@@ -120,6 +179,7 @@ export class Engine {
       this.fps = this.fps * 0.95 + (1 / Math.max(dt, 0.001)) * 0.05;
       this.time.value += dt;
       for (const u of this.updaters) u(dt, this.time.value);
+      this.adaptResolution(now);
       this.renderer.render(this.scene, this.camera);
     };
     requestAnimationFrame(loop);

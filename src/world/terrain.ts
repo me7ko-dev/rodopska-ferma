@@ -85,7 +85,8 @@ export function buildTerrain() {
 
 /** Зоната с нарисувана земя (пътеки, разлики в тревата) около фермата и селото. */
 export const DECAL = { minX: -84, maxX: 184, minZ: -68, maxZ: 68 };
-const PX_PER_M = 7.6;
+// пиксели на метър: по-гъсто = по-остри пътечки и трева отблизо (≤ 4096 px ширина)
+const PX_PER_M = QUALITY.value === 'high' ? 15 : QUALITY.value === 'medium' ? 12 : 10;
 
 /** Земята на фермата: нарисувана с подробности текстура (пътечки, следи, по-тъмна/светла трева). */
 export function buildFarmGround(paths: { pts: [number, number][]; w: number; kind: 'dirt' | 'gravel' }[]) {
