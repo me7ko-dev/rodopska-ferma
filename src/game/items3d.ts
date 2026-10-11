@@ -1661,6 +1661,17 @@ const builders: Record<string, () => THREE.Object3D> = {
     return g;
   },
 
+  crate_icon() {
+    const g = new THREE.Group();
+    const wood = mat('#b07a45', 0.85), dark = mat('#8a5a30', 0.9);
+    g.add(mesh(G.box, wood, [0, 0.45, 0], [1.1, 0.8, 0.9]));
+    for (const y of [0.2, 0.7]) g.add(mesh(G.box, dark, [0, y, 0], [1.14, 0.1, 0.94]));
+    for (const x of [-0.5, 0.5]) g.add(mesh(G.box, dark, [x, 0.45, 0], [0.1, 0.84, 0.94]));
+    g.add(mesh(G.sphere, mat('#e0302a', 0.4), [-0.2, 0.95, 0.1], 0.18));
+    g.add(mesh(G.sphere, mat('#f2c230', 0.4), [0.15, 0.95, -0.1], 0.2));
+    g.add(mesh(G.sphere, mat('#6cbf4a', 0.4), [0.25, 0.92, 0.2], 0.15));
+    return g;
+  },
   calendar() {
     const g = new THREE.Group();
     g.add(mesh(roundedBox(1.2, 0.18, 1.3, 0.08), mat('#fffaf0', 0.6), [0, 0, 0], 1, [Math.PI / 2 - 0.25, 0, 0]));

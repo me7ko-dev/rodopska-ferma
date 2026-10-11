@@ -26,6 +26,7 @@ import { Vehicles } from './game/vehicles';
 import { People } from './game/npc';
 import { refillOrders } from './game/orders';
 import { tickObstacles } from './game/obstacles';
+import { showNews, NEWS_VERSION } from './ui/news';
 import { tickCargo, onCargo, CARGO_RETURN } from './game/cargo';
 import { CargoTrain } from './world/cargotrain';
 import { Fishing } from './game/fishing';
@@ -100,7 +101,8 @@ function newFarm(farm: Farm) {
   farm.add('d_bush', 14, 10);
   farm.add('d_bush', -10, 12);
   farm.add('d_well', 11, 0);
-  S.inv = { wheat: 4, corn: 2, feed_chicken: 3 };
+  S.inv = { wheat: 4, corn: 2, feed_chicken: 3, axe: 2, shovel: 1, saw: 1 };
+  S.news = NEWS_VERSION;
   save(true);
 }
 
@@ -291,6 +293,7 @@ async function boot() {
   }, 3000);
   void isSeasonal;
   (window as any).__rf = { fishing, cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
+  if (!VISIT) setTimeout(() => showNews({ fishing: () => fishing.enter(), mine: () => UI.openMine(), train: () => UI.openOrders('train') }), 4200);
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);

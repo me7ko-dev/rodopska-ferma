@@ -678,6 +678,15 @@ export function xpForLevel(lv: number) {
   return Math.round(12 * Math.pow(lv, 1.85) + 15 * lv);
 }
 
+/** Нови занимания, които се отключват с нивото. */
+export const FEATURES: { level: number; name: string; icon: string }[] = [
+  { level: 2, name: 'Задачи за деня', icon: 'calendar' },
+  { level: 6, name: 'Риболов на езерото', icon: 'f_carp' },
+  { level: 7, name: 'Товарен влак', icon: 'crate_icon' },
+  { level: 8, name: 'Родопски събор', icon: 'trophy' },
+  { level: 9, name: 'Рудник', icon: 'pickaxe' },
+];
+
 /** Какво се отключва на всяко ниво (за прозореца „Ново ниво!“). */
 export function unlocksAt(lv: number) {
   const out: { name: string; icon: string }[] = [];
@@ -686,6 +695,7 @@ export function unlocksAt(lv: number) {
   for (const c of CARS) if (c.level === lv) out.push({ name: c.name, icon: 'car:' + c.id });
   for (const h of HOME_TIERS) if (h.level === lv && h.price > 0) out.push({ name: h.name, icon: 'home' });
   for (const l of LANDS) if (l.level === lv) out.push({ name: 'Нова земя', icon: 'land' });
+  for (const f of FEATURES) if (f.level === lv) out.unshift({ name: f.name, icon: f.icon });
   return out;
 }
 

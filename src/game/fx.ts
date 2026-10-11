@@ -65,6 +65,24 @@ export function flyTo(iconId: string, from: THREE.Vector3 | { x: number; y: numb
   }
 }
 
+/** Конфети по целия екран (ново ниво, голяма награда). */
+export function confetti(n = 90) {
+  const cols = ['#ffd23a', '#e5533d', '#4fa52c', '#2f8fdc', '#ff8fb1', '#a87ae8', '#ffffff'];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('i');
+    el.className = 'confetti';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.background = cols[i % cols.length];
+    el.style.animationDelay = Math.random() * 0.6 + 's';
+    el.style.animationDuration = 1.8 + Math.random() * 1.6 + 's';
+    el.style.setProperty('--x', (Math.random() - 0.5) * 240 + 'px');
+    el.style.setProperty('--r', (Math.random() * 1440 - 720) + 'deg');
+    if (i % 3 === 0) el.style.borderRadius = '50%';
+    layer.appendChild(el);
+    setTimeout(() => el.remove(), 4200);
+  }
+}
+
 /** Изскачащ текст (напр. „+5“ или „Складът е пълен!“). */
 export function popText(text: string, at: THREE.Vector3 | { x: number; y: number }, color = '#fff', big = false) {
   const p = 'isVector3' in at ? toScreen(at as THREE.Vector3) : (at as { x: number; y: number });

@@ -61,6 +61,7 @@ export interface Save {
   cargo?: CargoState; // товарният влак
   fishLog?: Record<string, { n: number; max: number }>; // рибарски дневник: брой и най-голяма (кг)
   fishDone?: boolean; // взета ли е наградата за целия дневник
+  news?: number; // коя версия на „Ново в играта“ е видял
   daily?: DailyState; // задачи за деня
   login?: { day: string; n: number }; // подарък за всеки ден
   fair?: FairState; // седмичният събор

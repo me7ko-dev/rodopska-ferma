@@ -14,7 +14,7 @@ import { initEvents } from './events';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
-import { sparkle, flyTo, toScreen, bounce } from '../game/fx';
+import { sparkle, flyTo, toScreen, bounce, confetti } from '../game/fx';
 import type { Farm, View } from '../game/world';
 import { centerOf, slotsOf, extraSlotCost, MAX_EXTRA_SLOTS } from '../game/world';
 import type { Village } from '../game/village';
@@ -1171,6 +1171,7 @@ function levelUp() {
   addDiamonds(dia);
   addCoins(coins);
   sfx('levelup');
+  confetti();
   sparkle(C.farm.rig.target.clone().setY(3), 50);
   setTimeout(() => {
     open('Ново ниво!', {
@@ -1287,6 +1288,9 @@ export function bindUI(ctx: Ctx) {
     openObstacle,
     openFishLog,
     openMine,
+    panel(title: string, html: string, actions: Record<string, () => void>, small = false) {
+      open(title, { render: () => html, actions: Object.fromEntries(Object.entries(actions).map(([k, f]) => [k, () => f()])) }, small);
+    },
     placing(on: boolean, ok: boolean) {
       $('#placebar').classList.toggle('show', on);
       ($('#pok') as HTMLButtonElement).classList.toggle('gray', !ok);

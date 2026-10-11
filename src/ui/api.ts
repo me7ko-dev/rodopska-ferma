@@ -30,6 +30,8 @@ export interface UIApi {
   openObstacle(v: View): void;
   openFishLog(): void;
   openMine(): void;
+  /** Прозорец с готов HTML; бутоните с data-act="име" викат actions[име]. */
+  panel(title: string, html: string, actions: Record<string, () => void>, small?: boolean): void;
 }
 
 export const UI = {} as UIApi;
