@@ -11,6 +11,7 @@ import { mine, hit, wallDone, descend, pickLeft, mineTools } from '../game/mine'
 import { MINE_LEVEL } from '../game/data';
 import { track } from '../game/tasks';
 import { initEvents, openTasks, openFair } from './events';
+import { holidayBonus } from '../game/holidays';
 import { FEATURES } from '../game/data';
 import { POND, MINE_POS } from '../world/layout';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
@@ -484,7 +485,8 @@ function openOrders(tab = 'orders') {
     render: () => {
       if (current!.tab === 'train') return trainRender();
       const b = carBonus();
-      let html = `<div class="panel-desc">Изпълни поръчка — пикапът ще я откара. ${b.pct ? `Колите ти дават +${b.pct}% монети.` : 'Купи кола за бонус монети!'}</div><div class="orders">`;
+      const hb = holidayBonus();
+      let html = `<div class="panel-desc">${hb ? `🎉 Празник! Поръчките плащат +${Math.round(hb * 100)}%. ` : ''}Изпълни поръчка — пикапът ще я откара. ${b.pct ? `Колите ти дават +${b.pct}% монети.` : 'Купи кола за бонус монети!'}</div><div class="orders">`;
       S.orders.forEach((o, i) => {
         if (o.wait) {
           html += `<div class="order wait">Нова поръчка след<br>⏱ ${fmtTime((o.wait - now()) / 1000)}</div>`;
@@ -493,7 +495,7 @@ function openOrders(tab = 'orders') {
         const ok = canDeliver(o);
         html += `<div class="order ${ok ? 'ok' : ''}"><div class="who">${o.who}</div>
           <div class="its">${Object.entries(o.items).map(([k, n]) => `<span class="need ${count(k) < n ? 'miss' : ''}" title="${ITEMS[k].name}">${img(k, '')}${count(k)}/${n}</span>`).join('')}</div>
-          <div class="rew">${coinsHtml(Math.round(o.coins * (1 + b.pct / 100)) + b.flat)} <span class="price">${img('star', 'ic-sm')}${o.xp + b.xp}</span></div>
+          <div class="rew">${coinsHtml(Math.round(o.coins * (1 + b.pct / 100 + hb)) + b.flat)} <span class="price">${img('star', 'ic-sm')}${o.xp + b.xp}</span></div>
           <div class="row"><button class="btn sm ${ok ? '' : 'gray'}" data-act="send" data-i="${i}">🚚 Изпрати</button><span class="sp"></span><button class="btn xs red" data-act="trash" data-i="${i}" title="Махни">🗑</button></div></div>`;
       });
       return html + '</div>';

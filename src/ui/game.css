@@ -408,3 +408,6 @@ body.photo #ui, body.photo #markers, body.photo #hud-side { display: none !impor
 @keyframes phflash { from { opacity: .9; } to { opacity: 0; } }
 .card .lock.sea { background: #f0a81a; }
 .newfeat { text-align: center; margin-top: 8px; font-size: 16px; background: #fff3c4; border: 3px dashed #f0a81a; border-radius: 14px; padding: 6px; }
+.holiday { font-size: 16px; line-height: 1.5; padding: 6px; }
+.holiday .hbig { font-size: 54px; line-height: 1.2; }
+.holiday .need { margin: 2px; }

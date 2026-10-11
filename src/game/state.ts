@@ -62,6 +62,7 @@ export interface Save {
   fishLog?: Record<string, { n: number; max: number }>; // рибарски дневник: брой и най-голяма (кг)
   fishDone?: boolean; // взета ли е наградата за целия дневник
   news?: number; // коя версия на „Ново в играта“ е видял
+  holidays?: string[]; // взети празнични подаръци (напр. „newyear2027“)
   daily?: DailyState; // задачи за деня
   login?: { day: string; n: number }; // подарък за всеки ден
   fair?: FairState; // седмичният събор

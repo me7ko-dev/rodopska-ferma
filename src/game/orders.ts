@@ -1,6 +1,7 @@
 import { ITEMS, BUILDINGS, CROPS, TREES, ANIMALS, FISH } from './data';
 import { S, save, takeAll, addCoins, addXP, now, hasAll, type Order } from './state';
 import { track } from './tasks';
+import { holidayBonus } from './holidays';
 
 const NAMES = [
   'Баба Фатме', 'Дядо Иван', 'Айше', 'Мехмед', 'Леля Мария', 'Хасан', 'Елена', 'Салих', 'Бай Петър', 'Зюмбюл',
@@ -109,7 +110,7 @@ export function deliver(o: Order) {
   if (!canDeliver(o)) return null;
   takeAll(o.items);
   const b = carBonus();
-  const coins = Math.round(o.coins * (1 + b.pct / 100)) + b.flat;
+  const coins = Math.round(o.coins * (1 + b.pct / 100 + holidayBonus())) + b.flat;
   const xp = o.xp + b.xp;
   addCoins(coins);
   addXP(xp);

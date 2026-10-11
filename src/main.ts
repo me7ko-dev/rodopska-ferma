@@ -29,6 +29,10 @@ import { tickObstacles } from './game/obstacles';
 import { showNews, NEWS_VERSION } from './ui/news';
 import { initPhoto } from './ui/photo';
 import { Rainbow } from './world/rainbow';
+import { Fireworks } from './world/fireworks';
+import { Garland } from './world/garland';
+import { holidayToday, holidayGiftReady, claimHolidayGift } from './game/holidays';
+import { confetti } from './game/fx';
 import { tickCargo, onCargo, CARGO_RETURN } from './game/cargo';
 import { CargoTrain } from './world/cargotrain';
 import { Fishing } from './game/fishing';
@@ -42,10 +46,10 @@ import * as dataMod from './game/data';
 import * as stateMod from './game/state';
 import { initFx, setFxScene, updateMarkers, updateBounces, updateSparks } from './game/fx';
 import { bindUI, bindDayNight } from './ui/ui';
-import { icon } from './ui/icons';
+import { icon, img } from './ui/icons';
 import { Ambient } from './world/ambient';
 import { DayNight } from './world/daynight';
-import { rainSound } from './audio/sfx';
+import { rainSound, sfx } from './audio/sfx';
 import { UI } from './ui/api';
 import { Railway, whistleNear } from './world/railway';
 import { City } from './world/city';
@@ -236,6 +240,22 @@ async function boot() {
     hv.root.add(glow);
   }
   const rainbow = new Rainbow(scene);
+  // празници: украса над входа, поздрав с подарък и фойерверки нощем
+  const fireworks = new Fireworks(scene);
+  const holiday = VISIT ? null : holidayToday();
+  const garland = holiday ? new Garland(scene, holiday) : null;
+  if (holiday && holidayGiftReady(holiday)) {
+    setTimeout(() => {
+      const g = holiday.gift;
+      const items = Object.entries(g.items ?? {}).map(([k, n]) => `<span class="need">${img(k, '')}${n}</span>`).join(' ');
+      UI.panel(holiday.name, `<div class="center holiday"><div class="hbig">${holiday.deco === 'lanterns' ? '🌙' : holiday.deco === 'martenitsa' ? '❤️🤍' : '🎆'}</div><b>${holiday.greet}</b>
+        <div class="mt">Празничен подарък: ${g.coins ? `<span class="need">${img('coin', '')}${g.coins}</span>` : ''} ${g.dia ? `<span class="need">${img('diamond', '')}${g.dia}</span>` : ''} ${items}</div>
+        <div class="panel-desc mt">Днес поръчките плащат с ${Math.round(holiday.bonus * 100)}% повече!</div></div>
+        <div class="btns"><button class="btn gold" data-act="take">🎁 Вземи</button></div>`, {
+        take: () => { if (claimHolidayGift(holiday)) { confetti(); sfx('fanfare'); } UI.closeAll(); },
+      }, true);
+    }, (S.news ?? 0) < NEWS_VERSION ? 9000 : 5000);
+  }
   ambient.onRain = (on) => {
     const snow = season === 'winter';
     if (!on && !snow && daynight.night < 0.3) setTimeout(() => rainbow.show(engine.camera), 2500);
@@ -267,6 +287,8 @@ async function boot() {
     ambient.update(dt, engine.time.value);
     seasonFx.heavy = ambient.rainAmt;
     rainbow.update(dt);
+    garland?.update(dt, daynight.night);
+    fireworks.update(dt, holiday?.fireworks && daynight.night > 0.55 && rig.distance < 100 ? rig.target : null);
     seasonFx.update(dt, engine.time.value, rig.target.x, rig.target.z, rig.distance);
     daynight.update(dt, engine.time.value, ambient.rainAmt);
     railway.update(dt);
@@ -298,7 +320,7 @@ async function boot() {
     loadAll([...rest]);
   }, 3000);
   void isSeasonal;
-  (window as any).__rf = { rainbow, fishing, cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
+  (window as any).__rf = { fireworks, rainbow, fishing, cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
   if (!VISIT) setTimeout(() => showNews({ fishing: () => fishing.enter(), mine: () => UI.openMine(), train: () => UI.openOrders('train') }), 4200);
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
