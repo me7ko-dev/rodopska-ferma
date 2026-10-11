@@ -28,6 +28,8 @@ import { refillOrders } from './game/orders';
 import { tickObstacles } from './game/obstacles';
 import { tickCargo, onCargo, CARGO_RETURN } from './game/cargo';
 import { CargoTrain } from './world/cargotrain';
+import { Fishing } from './game/fishing';
+import './game/buildings3d';
 import * as ordersMod from './game/orders';
 import * as dataMod from './game/data';
 import * as stateMod from './game/state';
@@ -170,6 +172,8 @@ async function boot() {
   farmFence.position.set((FARM.minX + FARM.maxX) / 2, 0, (FARM.minZ + FARM.maxZ) / 2);
   scene.add(farmFence);
 
+  const fishing = new Fishing(scene, farm, rig);
+  farm.extraPick.push({ obj: fishing.proxy, tap: () => fishing.tapPier() });
   const village = new Village(scene, farm.extraPick);
   const vehicles = new Vehicles(scene, farm, rig);
   const people = new People(scene, farm);
@@ -257,6 +261,7 @@ async function boot() {
     // поръчките се попълват от само себе си; от време на време никне ново препятствие
     if (!VISIT && performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); tickObstacles(farm); tickCargo(); }
     cargoTrain.update(dt);
+    fishing.update(dt, engine.time.value);
   });
   engine.start();
   // останалите модели (сгради за купуване, коли, къщи) — тихо във фонов режим
@@ -268,7 +273,7 @@ async function boot() {
     loadAll([...rest]);
   }, 3000);
   void isSeasonal;
-  (window as any).__rf = { cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
+  (window as any).__rf = { fishing, cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);

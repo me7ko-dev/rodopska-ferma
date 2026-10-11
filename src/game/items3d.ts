@@ -195,6 +195,56 @@ function fish(body: string, belly: string) {
   return g;
 }
 
+/** Риба от езерото: тяло, корем, перки, опашка, ивици или петна. */
+function lakeFish(o: { body: string; belly: string; fin: string; len?: number; h?: number; stripes?: string; spots?: string; whiskers?: boolean; fancy?: boolean; shine?: number }) {
+  const g = new THREE.Group();
+  const L = o.len ?? 0.7, H = o.h ?? 0.28;
+  const rough = 0.35 - (o.shine ?? 0) * 0.2;
+  const extra = o.shine ? { metalness: 0.35 * o.shine } : {};
+  g.add(mesh(G.sphere, mat(o.body, rough, extra), [0, 0.32, 0], [L, H, 0.17]));
+  g.add(mesh(G.sphere, mat(o.belly, rough, extra), [0.02, 0.24, 0], [L * 0.9, H * 0.62, 0.16]));
+  // опашка
+  const tail = new THREE.Shape();
+  tail.moveTo(0, 0);
+  tail.lineTo(-0.34, o.fancy ? 0.36 : 0.24);
+  tail.quadraticCurveTo(-0.24, 0, -0.34, o.fancy ? -0.36 : -0.24);
+  tail.lineTo(0, 0);
+  const tg = new THREE.ShapeGeometry(tail, 6);
+  const fm = mat(o.fin, 0.5, { side: THREE.DoubleSide, transparent: !!o.fancy, opacity: o.fancy ? 0.85 : 1 });
+  g.add(mesh(tg, fm, [-L * 0.92, 0.32, 0], o.fancy ? 1.5 : 1));
+  // гръбна и коремни перки
+  const fin = new THREE.Shape();
+  fin.moveTo(-0.18, 0);
+  fin.quadraticCurveTo(-0.05, 0.22, 0.16, 0);
+  fin.lineTo(-0.18, 0);
+  const fg = new THREE.ShapeGeometry(fin, 6);
+  g.add(mesh(fg, fm, [0.02, 0.32 + H * 0.92, 0], [1.2, o.fancy ? 1.6 : 1, 1]));
+  g.add(mesh(fg, fm, [-0.1, 0.32 - H * 0.85, 0.02], [0.8, 0.7, 1], [Math.PI, 0, 0]));
+  g.add(mesh(fg, fm, [0.28, 0.25, 0.14], [0.6, 0.6, 1], [0.6, 0.6, 0]));
+  // око
+  g.add(mesh(G.sphereLo, mat('#ffffff', 0.3), [L * 0.72, 0.36, 0.11], 0.055));
+  g.add(mesh(G.sphereLo, mat('#111111', 0.2), [L * 0.75, 0.36, 0.14], 0.032));
+  if (o.stripes) for (let i = 0; i < 5; i++) g.add(mesh(G.box, mat(o.stripes, 0.5), [L * 0.45 - i * L * 0.2, 0.36, 0.13], [0.05, H * 1.3, 0.06]));
+  if (o.spots) {
+    const r = rng(o.body.length * 13);
+    for (let i = 0; i < 12; i++) g.add(mesh(G.sphereLo, mat(o.spots, 0.5), [(r() - 0.5) * L * 1.4, 0.3 + (r() - 0.3) * H * 1.1, 0.15], 0.03 + r() * 0.025));
+  }
+  if (o.whiskers) for (const s of [-1, 1]) {
+    const c = new THREE.CatmullRomCurve3([new THREE.Vector3(L * 0.95, 0.27, s * 0.05), new THREE.Vector3(L * 1.15, 0.22, s * 0.14), new THREE.Vector3(L * 1.3, 0.12, s * 0.12)]);
+    g.add(mesh(new THREE.TubeGeometry(c, 8, 0.012, 5), mat('#3a3530', 0.6)));
+  }
+  g.rotation.z = 0.12;
+  return g;
+}
+
+/** Чиния с храна. */
+function plate(fill: (b: THREE.Group, r: () => number) => void, color = '#f6f1e6') {
+  const g = new THREE.Group();
+  g.add(mesh(lathe([[0, 0], [0.55, 0], [0.62, 0.04], [0.75, 0.12], [0.73, 0.14], [0.5, 0.06], [0, 0.06]], 36), mat(color, 0.3)));
+  fill(g, rng(color.length * 3 + 1));
+  return g;
+}
+
 function wheatStalks(n: number, h: number, ear: string, stem: string) {
   const g = new THREE.Group();
   const r = rng(5);
@@ -1212,6 +1262,43 @@ const builders: Record<string, () => THREE.Object3D> = {
     }
     return g;
   },
+
+  // ---- риби ----
+  f_crucian: () => lakeFish({ body: '#c9a23a', belly: '#f0dc8a', fin: '#c47a3a', len: 0.55, h: 0.32, shine: 0.6 }),
+  f_perch: () => lakeFish({ body: '#7e9a3c', belly: '#e8e2b0', fin: '#e0502a', len: 0.6, h: 0.27, stripes: '#3e4a20' }),
+  f_carp: () => lakeFish({ body: '#a8803a', belly: '#e8cf8a', fin: '#8a5a2a', len: 0.72, h: 0.3, spots: '#7a5a2a', shine: 0.5 }),
+  f_chub: () => lakeFish({ body: '#7f8a96', belly: '#e6eaee', fin: '#d07a4a', len: 0.68, h: 0.24, shine: 0.8 }),
+  f_barbel: () => lakeFish({ body: '#8a7a4a', belly: '#e8dcae', fin: '#b07a40', len: 0.78, h: 0.2, spots: '#5a4a2a', whiskers: true }),
+  f_pike: () => lakeFish({ body: '#5f7a3a', belly: '#e8e6c0', fin: '#7a8a3a', len: 0.95, h: 0.18, spots: '#d8d090' }),
+  f_catfish: () => lakeFish({ body: '#4a4a48', belly: '#c8c4b8', fin: '#3a3a38', len: 0.95, h: 0.24, whiskers: true }),
+  f_goldfish: () => lakeFish({ body: '#ff8a1e', belly: '#ffd25a', fin: '#ffae4a', len: 0.5, h: 0.3, fancy: true, shine: 0.9 }),
+  friedfish: () => plate((b) => {
+    for (let i = 0; i < 3; i++) { const f = lakeFish({ body: '#c9852a', belly: '#e8b060', fin: '#a8651a', len: 0.42, h: 0.18 }); f.position.set(-0.1 + i * 0.06, 0.04, -0.25 + i * 0.25); f.rotation.set(-Math.PI / 2 + 0.1, 0, 0.2); f.scale.setScalar(0.85); b.add(f); }
+    b.add(mesh(G.sphere, mat('#f2d23a', 0.4), [0.42, 0.12, 0.2], [0.12, 0.08, 0.12]));
+  }),
+  smokedcarp: () => plate((b) => {
+    const f = lakeFish({ body: '#a8601e', belly: '#d89a4a', fin: '#7a4a1a', len: 0.62, h: 0.26 });
+    f.position.set(0, 0.05, 0);
+    f.rotation.set(-Math.PI / 2 + 0.15, 0, 0);
+    b.add(f);
+    b.add(mesh(G.cyl, mat('#5a3a1a', 0.8), [0.4, 0.12, 0.35], [0.03, 0.4, 0.03], [0, 0, 1.3]));
+  }, '#8a5a30'),
+  fishballs: () => plate((b, r) => {
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; b.add(mesh(G.sphere, mat('#b8803a', 0.7), [Math.cos(a) * 0.3, 0.16, Math.sin(a) * 0.3], 0.14 + r() * 0.02)); }
+    b.add(mesh(G.sphere, mat('#7ac24a', 0.6), [0, 0.15, 0], [0.12, 0.06, 0.12]));
+  }),
+  stuffedpike: () => plate((b) => {
+    const f = lakeFish({ body: '#c08a4a', belly: '#e8c48a', fin: '#8a6a3a', len: 0.8, h: 0.2 });
+    f.position.set(0, 0.05, 0);
+    f.rotation.set(-Math.PI / 2 + 0.1, 0, 0.3);
+    b.add(f);
+    for (let i = 0; i < 4; i++) b.add(mesh(G.cyl, mat('#f08a2a', 0.6), [-0.4 + i * 0.25, 0.1, 0.42], [0.05, 0.12, 0.05], [Math.PI / 2, 0, 0]));
+  }),
+  catfishstew: () => bowl('#8a4a2a', (b, r) => {
+    b.add(mesh(G.cyl, mat('#c0441e', 0.6), [0, 0.3, 0], [0.6, 0.02, 0.6]));
+    for (let i = 0; i < 7; i++) b.add(mesh(G.box, mat(i % 3 ? '#e8d8b8' : '#e0302a', 0.6), [(r() - 0.5) * 0.7, 0.33, (r() - 0.5) * 0.7], [0.14, 0.07, 0.12], [0, r() * 3, 0]));
+    b.add(mesh(G.sphere, mat('#4fa52c', 0.6), [0.15, 0.34, -0.1], [0.1, 0.03, 0.06]));
+  }),
 
   // ---- материали и инструменти ----
   bolt() {

@@ -49,7 +49,7 @@ export interface Save {
   tut: number;
   sound: boolean;
   music: boolean;
-  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number; helps?: number; traded?: number; found?: number; cleared?: number; trains?: number };
+  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number; helps?: number; traded?: number; found?: number; cleared?: number; trains?: number; fish?: number };
   ach: Record<string, number>;
   created: number;
   last: number;
@@ -58,6 +58,8 @@ export interface Save {
   obsT?: number; // кога за последно е поникнало препятствие
   luck?: number; // расте при всяка жътва без находка (за да не чакаш дълго)
   cargo?: CargoState; // товарният влак
+  fishLog?: Record<string, { n: number; max: number }>; // рибарски дневник: брой и най-голяма (кг)
+  fishDone?: boolean; // взета ли е наградата за целия дневник
 }
 
 type Listener = (what: string) => void;

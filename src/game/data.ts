@@ -132,6 +132,37 @@ export const TOOL_SHOP: { id: string; price: number; qty: number }[] = [
 /** Колко диаманта струва един липсващ материал. */
 export const MAT_DIAMONDS = 6;
 
+// --- риби от езерото (риболов) ---
+item('f_crucian', 'Каракуда', 'fish', 16, 2, 6);
+item('f_perch', 'Костур', 'fish', 22, 3, 6);
+item('f_carp', 'Шаран', 'fish', 30, 4, 6);
+item('f_chub', 'Речен кефал', 'fish', 28, 4, 8);
+item('f_barbel', 'Мряна', 'fish', 38, 5, 10);
+item('f_pike', 'Щука', 'fish', 62, 8, 12);
+item('f_catfish', 'Сом', 'fish', 115, 14, 15);
+item('f_goldfish', 'Златна рибка', 'fish', 260, 30, 6);
+
+export const FISH_LEVEL = 6;
+/** Видове риба: тегло (кг), колко често се хваща, колко силно дърпа (0…1), от кое ниво. */
+export const FISH: { id: string; min: number; max: number; w: number; power: number; level: number; rare: 0 | 1 | 2 | 3 }[] = [
+  { id: 'f_crucian', min: 0.15, max: 0.9, w: 30, power: 0.2, level: 6, rare: 0 },
+  { id: 'f_perch', min: 0.2, max: 1.4, w: 26, power: 0.35, level: 6, rare: 0 },
+  { id: 'f_carp', min: 0.8, max: 7, w: 22, power: 0.55, level: 6, rare: 0 },
+  { id: 'trout', min: 0.3, max: 2.4, w: 11, power: 0.5, level: 8, rare: 1 },
+  { id: 'f_chub', min: 0.3, max: 2.2, w: 12, power: 0.42, level: 8, rare: 1 },
+  { id: 'f_barbel', min: 0.5, max: 3.5, w: 9, power: 0.62, level: 10, rare: 1 },
+  { id: 'f_pike', min: 1.5, max: 11, w: 5, power: 0.8, level: 12, rare: 2 },
+  { id: 'f_catfish', min: 4, max: 45, w: 2.2, power: 0.95, level: 15, rare: 2 },
+  { id: 'f_goldfish', min: 0.1, max: 0.35, w: 0.7, power: 0.3, level: 6, rare: 3 },
+];
+
+// ястия от риба (в Рибарницата)
+item('friedfish', 'Пържени рибки', 'food', 70, 6, 7);
+item('smokedcarp', 'Пушен шаран', 'food', 120, 9, 8);
+item('fishballs', 'Рибни кюфтета', 'food', 125, 10, 9);
+item('stuffedpike', 'Пълнена щука', 'food', 270, 20, 13);
+item('catfishstew', 'Сом по рибарски', 'food', 400, 30, 16);
+
 // --- фураж ---
 item('feed_chicken', 'Храна за кокошки', 'feed', 4, 1, 1);
 item('feed_cow', 'Храна за крави', 'feed', 8, 1, 5);
@@ -386,6 +417,14 @@ b({ id: 'perfume', name: 'Парфюмерия', desc: 'Розов парфюм,
   { out: 'giftbasket', qty: 1, needs: { jam: 1, honey: 1, tea: 1, goatsoap: 1 }, time: 7200 },
 ] });
 
+b({ id: 'smokehouse', name: 'Рибарница', desc: 'Пържени рибки, пушен шаран и рибни специалитети от уловеното в езерото.', model: 'pb_smokehouse', size: 6.5, foot: [6, 6], level: 7, price: 1600, kind: 'production', slots: 2, unique: true, recipes: [
+  { out: 'friedfish', qty: 1, needs: { f_crucian: 3, corn: 1 }, time: 900 },
+  { out: 'smokedcarp', qty: 1, needs: { f_carp: 2 }, time: 1800 },
+  { out: 'fishballs', qty: 1, needs: { f_perch: 2, egg: 2, wheat: 1 }, time: 1500 },
+  { out: 'stuffedpike', qty: 1, needs: { f_pike: 1, onion: 1, carrot: 2, butter: 1 }, time: 3600 },
+  { out: 'catfishstew', qty: 1, needs: { f_catfish: 1, tomato: 2, pepper: 2, onion: 1 }, time: 4200 },
+] });
+
 // склад
 b({ id: 'barn', name: 'Хамбар', desc: 'Тук се пазят продуктите и храните.', model: 'barn_red', size: 9, foot: [7, 7], level: 1, price: 0, kind: 'storage', unique: true });
 b({ id: 'silo', name: 'Силоз', desc: 'Тук се пазят зърното и зеленчуците.', model: 'silo_house', size: 9, foot: [5, 5], level: 1, price: 0, kind: 'storage', unique: true });
@@ -625,5 +664,8 @@ export const ACHIEVEMENTS: AchDef[] = [
   { id: 'cars', name: 'Шофьор', desc: 'Купи {n} коли', icon: 'car:pickup', tiers: [1, 3, 6, 10, 14], reward: [3, 6, 12, 30, 50] },
   { id: 'level', name: 'Опитен фермер', desc: 'Стигни ниво {n}', icon: 'star', tiers: [5, 10, 15, 20, 30, 40, 50], reward: [5, 10, 15, 25, 40, 60, 100] },
   { id: 'helps', name: 'Добър приятел', desc: 'Помогни на приятели {n} пъти', icon: 'heart', tiers: [5, 25, 100, 400], reward: [3, 6, 12, 25] },
+  { id: 'fish', name: 'Рибар', desc: 'Хвани {n} риби', icon: 'f_carp', tiers: [5, 30, 100, 300, 1000], reward: [3, 6, 12, 25, 40] },
+  { id: 'cleared', name: 'Дървосекач', desc: 'Разчисти {n} препятствия', icon: 'axe', tiers: [3, 15, 50, 150], reward: [2, 5, 10, 20] },
+  { id: 'trains', name: 'Железничар', desc: 'Напълни {n} товарни влака', icon: 'b:board', tiers: [1, 5, 20, 60], reward: [3, 8, 15, 30] },
   { id: 'traded', name: 'Търговец', desc: 'Продай {n} пъти на други играчи', icon: 'b:market', tiers: [3, 15, 60, 200], reward: [3, 6, 12, 25] },
 ];

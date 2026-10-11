@@ -1,4 +1,4 @@
-import { ITEMS, BUILDINGS, CROPS, TREES, ANIMALS } from './data';
+import { ITEMS, BUILDINGS, CROPS, TREES, ANIMALS, FISH } from './data';
 import { S, save, takeAll, addCoins, addXP, now, hasAll, type Order } from './state';
 
 const NAMES = [
@@ -20,6 +20,8 @@ export function makeable(): string[] {
     if (b.animal && (e.animals?.length ?? 0) > 0) out.add(ANIMALS[b.animal].product);
     if (TREES[e.type]) out.add(TREES[e.type].fruit);
   }
+  // рибите от езерото (само често срещаните)
+  for (const f of FISH) if (f.rare === 0 && f.level <= S.level) out.add(f.id);
   // рецепта е възможна, ако всичките ѝ съставки са възможни (повтаряме, докато има промяна)
   let changed = true;
   while (changed) {

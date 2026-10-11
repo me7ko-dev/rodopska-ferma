@@ -5,6 +5,8 @@ import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMA
 import { clearObstacle } from '../game/obstacles';
 import { cargo, cargoUnlocked, canFill, fillCrate, callNow, filledCount, CARGO_LEVEL } from '../game/cargo';
 import { CARGO_VIEW } from '../world/cargotrain';
+import { FISH } from '../game/data';
+import { FISHLOG_REWARD, fishLogComplete } from '../game/fishing';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
@@ -719,6 +721,40 @@ function openDeco(v: View) {
 }
 
 // =====================================================================
+// РИБАРСКИ ДНЕВНИК
+function openFishLog() {
+  open('Рибарски дневник', {
+    render: () => {
+      const log = S.fishLog ?? {};
+      const caught = FISH.filter((f) => log[f.id]?.n).length;
+      const stars = ['', '★', '★★', '★★★'];
+      let html = `<div class="panel-desc">Хванати видове: <b>${caught} / ${FISH.length}</b> · общо риби: <b>${S.stats.fish ?? 0}</b>. Сомът кълве повече нощем, а щуката — призори и привечер.</div><div class="grid">`;
+      for (const f of FISH) {
+        const e = log[f.id];
+        const lk = f.level > S.level;
+        html += `<div class="card ${e?.n ? '' : 'locked'}">${lk ? `<div class="lock">Ниво ${f.level}</div>` : ''}${f.rare ? `<div class="own" style="background:#e0a800">${stars[f.rare]}</div>` : ''}${img(f.id, 'ic')}
+          <div class="nm">${e?.n ? ITEMS[f.id].name : '???'}</div>
+          <div class="sub">${e?.n ? `Хванати: ${e.n}<br>Рекорд: ${e.max.toLocaleString('bg-BG')} кг` : `до ${f.max} кг`}</div></div>`;
+      }
+      html += '</div>';
+      if (S.fishDone) html += `<div class="panel-desc mt">Дневникът е пълен! 🏆</div>`;
+      else html += `<div class="btns"><button class="btn ${fishLogComplete() ? 'gold' : 'gray'}" data-act="claimfish">Хвани всички видове: ${img('diamond')} ${FISHLOG_REWARD}</button></div>`;
+      return html;
+    },
+    actions: {
+      claimfish: () => {
+        if (S.fishDone || !fishLogComplete()) { UI.toast('Първо хвани всички видове риба', 'info'); return; }
+        S.fishDone = true;
+        addDiamonds(FISHLOG_REWARD);
+        flyTo('diamond', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-diamonds', 6);
+        sfx('fanfare');
+        save();
+      },
+    },
+  });
+}
+
+// =====================================================================
 // ПРЕПЯТСТВИЕ
 function openObstacle(v: View) {
   const def = v.def;
@@ -1174,6 +1210,7 @@ export function bindUI(ctx: Ctx) {
     visitTap,
     openSocial,
     openObstacle,
+    openFishLog,
     placing(on: boolean, ok: boolean) {
       $('#placebar').classList.toggle('show', on);
       ($('#pok') as HTMLButtonElement).classList.toggle('gray', !ok);
