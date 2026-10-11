@@ -9,7 +9,7 @@ import {
   fair, takeFairTask, finishFairTask, claimMilestone, claimFairEnd, rivals, rankOf, weekStart,
   FAIR_LEVEL, FAIR_TASKS, FAIR_ACTIVE, FAIR_MILESTONES, FAIR_PRIZES, type Task,
 } from '../game/tasks';
-import type { PanelApi } from './social';
+import { openFairTop, type PanelApi } from './social';
 
 // Задачи за деня, подарък за всеки ден и седмичният Родопски събор.
 
@@ -159,7 +159,8 @@ export function openFair() {
       } else html += '<div class="panel-desc mt">Взе всички задачи за седмицата. Довърши започнатите! 💪</div>';
       // класиране
       html += `<div class="sec">Класиране</div><div class="toplist">${list.map((x, i) => `<div class="trow ${x.me ? 'me' : ''}"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><span class="nm">${x.me ? `<b>${x.name}</b><small>ти</small>` : x.name}</span><span class="val">${fmt(x.pts)}</span></div>`).join('')}</div>
-        <div class="panel-desc mt">Награди: 1-во място — ${FAIR_PRIZES[0]} 💎 и 2 динамита, 2-ро — ${FAIR_PRIZES[1]} 💎, 3-то — ${FAIR_PRIZES[2]} 💎.</div>`;
+        <div class="panel-desc mt">Награди: 1-во място — ${FAIR_PRIZES[0]} 💎 и 2 динамита, 2-ро — ${FAIR_PRIZES[1]} 💎, 3-то — ${FAIR_PRIZES[2]} 💎.</div>
+        <div class="btns"><button class="btn blue sm" data-act="online">🌍 Класация с истински играчи</button></div>`;
       return html;
     },
     actions: {
@@ -182,6 +183,7 @@ export function openFair() {
         for (const k of Object.keys(m.items ?? {})) flyTo(k, mid(), '#hud-barn', 1, 300);
         sfx('fanfare');
       },
+      online: () => openFairTop(),
       endclaim: () => {
         const r = claimFairEnd();
         if (!r) return;

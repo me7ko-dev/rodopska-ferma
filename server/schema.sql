@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
   orders INTEGER NOT NULL DEFAULT 0,
   week TEXT NOT NULL DEFAULT '',
   week_earned INTEGER NOT NULL DEFAULT 0,
+  fair_week TEXT NOT NULL DEFAULT '', -- Родопски събор: седмицата и точките
+  fair_pts INTEGER NOT NULL DEFAULT 0,
   likes INTEGER NOT NULL DEFAULT 0,
   rev INTEGER NOT NULL DEFAULT 0,     -- версия на записа в облака
   saved INTEGER NOT NULL DEFAULT 0,   -- кога е играно последно (S.last)
@@ -25,6 +27,7 @@ CREATE INDEX IF NOT EXISTS users_level ON users(level DESC, xp DESC);
 CREATE INDEX IF NOT EXISTS users_earned ON users(earned DESC);
 CREATE INDEX IF NOT EXISTS users_week ON users(week, week_earned DESC);
 CREATE INDEX IF NOT EXISTS users_likes ON users(likes DESC);
+CREATE INDEX IF NOT EXISTS users_fair ON users(fair_week, fair_pts DESC);
 CREATE INDEX IF NOT EXISTS users_seen ON users(seen DESC);
 
 CREATE TABLE IF NOT EXISTS sessions (

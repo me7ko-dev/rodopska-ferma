@@ -108,17 +108,25 @@ function friendsTab() {
 
 function topTab() {
   if (!loggedIn()) return `<div class="empty">Първо си направи профил (раздел „Профил“).</div>`;
-  const kinds = [['level', '⭐ Ниво'], ['week', '📅 Седмицата'], ['earned', '🪙 Богатство'], ['likes', '❤ Харесвания']];
+  const kinds = [['level', '⭐ Ниво'], ['fair', '🏆 Събор'], ['week', '📅 Седмицата'], ['earned', '🪙 Богатство'], ['likes', '❤ Харесвания']];
   let html = `<div class="tabs mini">${kinds.map(([k, l]) => `<div class="tab ${topBy === k ? 'on' : ''}" data-act="topby" data-k="${k}">${l}</div>`).join('')}</div>`;
   if (!top || top.by !== topBy) { load('top'); return html + '<div class="empty">Зареждане…</div>'; }
-  const unit = topBy === 'level' ? '' : topBy === 'likes' ? ' ❤' : ' 🪙';
+  const unit = topBy === 'level' ? '' : topBy === 'likes' ? ' ❤' : topBy === 'fair' ? ' 🏆' : ' 🪙';
   html += topBy === 'week' ? '<div class="panel-desc">Кой е спечелил най-много монети от понеделник насам.</div>' : '';
+  html += topBy === 'fair' ? '<div class="panel-desc">Точки от Родопския събор тази седмица — истински играчи от цялата страна.</div>' : '';
   html += `<div class="toplist">${top.rows.map((r) => `<div class="trow ${r.me ? 'me' : ''}" data-act="${r.me ? '' : 'visit'}" data-n="${esc(r.name)}">
       <span class="rk ${r.rank <= 3 ? 'r' + r.rank : ''}">${r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span>
       <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.farm || '')}</small></span>
       <span class="val">${topBy === 'level' ? `ниво ${r.value}` : fmt(r.value) + unit}</span></div>`).join('') || '<div class="empty">Още няма никой.</div>'}</div>`;
   html += `<div class="center mt"><b>Твоето място: ${top.me.rank}</b> (${topBy === 'level' ? 'ниво ' + top.me.value : fmt(top.me.value) + unit})</div>`;
   return html;
+}
+
+/** Отваря класацията на събора с истински играчи. */
+export function openFairTop() {
+  topBy = 'fair';
+  top = null;
+  openSocial(loggedIn() ? 'top' : 'me');
 }
 
 export function openSocial(tab = loggedIn() ? 'friends' : 'me') {
@@ -229,7 +237,7 @@ export function marketRender(tab: string) {
   for (let i = mine.rows.length; i < mine.max; i++) html += `<div class="slot">празно</div>`;
   html += '</div>';
   if (mine.rows.length < mine.max) {
-    const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ['crop', 'fruit', 'animal', 'food'].includes(ITEMS[k].kind)).sort((a, b) => ITEMS[a[0]].level - ITEMS[b[0]].level);
+    const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ['crop', 'fruit', 'animal', 'food', 'fish', 'ore', 'tool'].includes(ITEMS[k].kind)).sort((a, b) => ITEMS[a[0]].level - ITEMS[b[0]].level);
     html += `<div class="sec">Какво да продадеш?</div><div class="inv">${items.map(([k, n]) => `<div class="invi ${sellSel === k ? 'sel' : ''}" data-act="msel" data-k="${k}">${img(k, '')}<b class="outl">${n}</b></div>`).join('') || '<div class="empty">Складът е празен.</div>'}</div>`;
     if (sellSel && count(sellSel) > 0) {
       sellQty = Math.max(1, Math.min(sellQty, count(sellSel), 10));

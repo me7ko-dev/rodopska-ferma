@@ -13,7 +13,7 @@ interface D1Stmt {
 interface D1 { prepare(sql: string): D1Stmt; batch(s: D1Stmt[]): Promise<D1Result[]> }
 interface Env { DB: D1 }
 
-type User = { id: number; name: string; farm: string; level: number; xp: number; earned: number; orders: number; likes: number; rev: number; saved: number; seen: number; week: string; week_earned: number };
+type User = { id: number; name: string; farm: string; level: number; xp: number; earned: number; orders: number; likes: number; rev: number; saved: number; seen: number; week: string; week_earned: number; fair_week: string; fair_pts: number };
 
 const MAX_SAVE = 600_000; // байта
 const HELPS_PER_FRIEND = 5; // на ден, от един приятел на друг
@@ -124,7 +124,7 @@ async function body(req: Request): Promise<Record<string, unknown>> {
   return {};
 }
 
-const USER_COLS = 'id, name, farm, level, xp, earned, orders, likes, rev, saved, seen, week, week_earned';
+const USER_COLS = 'id, name, farm, level, xp, earned, orders, likes, rev, saved, seen, week, week_earned, fair_week, fair_pts';
 function pub(u: User) {
   return { id: u.id, name: u.name, farm: u.farm, level: u.level, likes: u.likes, seen: u.seen };
 }
@@ -274,8 +274,11 @@ route('PUT', '/api/save', async (env, req) => {
   const weekEarned = (u.week === wk ? u.week_earned : 0) + (earned >= u.earned ? delta : 0);
   const rev = u.rev + 1;
   const saved = Math.min(Date.now() + 60_000, Math.floor(Number(s.last) || Date.now()));
-  await env.DB.prepare('UPDATE users SET save = ?, rev = ?, saved = ?, level = ?, xp = ?, earned = ?, orders = ?, farm = ?, week = ?, week_earned = ? WHERE id = ?')
-    .bind(txt, rev, saved, level, xp, earned, orders, cleanFarm(s.name), wk, weekEarned, u.id).run();
+  // Родопски събор: точките за тази седмица (ако съборът е започнат и не е свършил)
+  const fair = (save as { fair?: { pts?: number; ended?: boolean } }).fair;
+  const fairPts = fair && !fair.ended ? Math.max(0, Math.min(20_000, Math.floor(Number(fair.pts) || 0))) : null;
+  await env.DB.prepare('UPDATE users SET save = ?, rev = ?, saved = ?, level = ?, xp = ?, earned = ?, orders = ?, farm = ?, week = ?, week_earned = ?, fair_week = ?, fair_pts = ? WHERE id = ?')
+    .bind(txt, rev, saved, level, xp, earned, orders, cleanFarm(s.name), wk, weekEarned, fairPts == null ? u.fair_week : wk, fairPts ?? u.fair_pts, u.id).run();
   return { rev, saved };
 });
 
@@ -401,6 +404,7 @@ route('GET', '/api/top', async (env, req, _m, url) => {
     earned: ['save IS NOT NULL', 'earned DESC', (x) => x.earned],
     week: [`week = '${wk}'`, 'week_earned DESC', (x) => x.week_earned],
     likes: ['likes > 0', 'likes DESC', (x) => x.likes],
+    fair: [`fair_week = '${wk}' AND fair_pts > 0`, 'fair_pts DESC', (x) => x.fair_pts],
   };
   const [where, order, val] = q[by] ?? q.level;
   const rows = await env.DB.prepare(`SELECT ${USER_COLS} FROM users WHERE ${where} ORDER BY ${order} LIMIT 50`).all<User>();
@@ -409,13 +413,14 @@ route('GET', '/api/top', async (env, req, _m, url) => {
   if (idx >= 0) myRank = idx + 1;
   else {
     const mine = val(u);
-    const col = by === 'week' ? 'week_earned' : by === 'earned' ? 'earned' : by === 'likes' ? 'likes' : 'level';
-    const ahead = await env.DB.prepare(`SELECT COUNT(*) AS n FROM users WHERE ${where} AND ${col} > ?`).bind(by === 'week' && u.week !== wk ? 0 : mine).first<{ n: number }>();
+    const col = by === 'week' ? 'week_earned' : by === 'earned' ? 'earned' : by === 'likes' ? 'likes' : by === 'fair' ? 'fair_pts' : 'level';
+    const stale = (by === 'week' && u.week !== wk) || (by === 'fair' && u.fair_week !== wk);
+    const ahead = await env.DB.prepare(`SELECT COUNT(*) AS n FROM users WHERE ${where} AND ${col} > ?`).bind(stale ? 0 : mine).first<{ n: number }>();
     myRank = (ahead?.n ?? 0) + 1;
   }
   return {
     rows: rows.results.map((r, i) => ({ rank: i + 1, name: r.name, farm: r.farm, level: r.level, value: val(r), me: r.id === u.id })),
-    me: { rank: myRank, value: by === 'week' && u.week !== wk ? 0 : val(u) },
+    me: { rank: myRank, value: (by === 'week' && u.week !== wk) || (by === 'fair' && u.fair_week !== wk) ? 0 : val(u) },
   };
 });
 
