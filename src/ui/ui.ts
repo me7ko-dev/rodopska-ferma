@@ -9,6 +9,8 @@ import { FISH } from '../game/data';
 import { FISHLOG_REWARD, fishLogComplete } from '../game/fishing';
 import { mine, hit, wallDone, descend, pickLeft, mineTools } from '../game/mine';
 import { MINE_LEVEL } from '../game/data';
+import { track } from '../game/tasks';
+import { initEvents } from './events';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
@@ -395,6 +397,7 @@ function openStorage(silo: boolean) {
         const it = ITEMS[sel];
         if (!takeAll({ [sel]: qty })) return;
         addCoins(it.price * qty);
+        track('sell', sel, qty);
         flyTo('coin', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-coins', Math.min(6, qty));
         sfx('coin');
         if (count(sel) <= 0) sel = '';
@@ -1026,6 +1029,7 @@ function openMarket(tab = 'npc') {
         if ((sold[d.id] ?? 0) >= d.qty || count(d.id) < 1) { sfx('error'); return; }
         takeAll({ [d.id]: 1 });
         sold[d.id] = (sold[d.id] ?? 0) + 1;
+        track('sell', d.id, 1);
         addCoins(Math.round(ITEMS[d.id].price * d.mult));
         addXP(1);
         flyTo('coin', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-coins', 2);
@@ -1238,6 +1242,13 @@ export function bindUI(ctx: Ctx) {
   C = ctx;
   buildHUD();
   initSocial({
+    open: (t, p, small) => open(t, p, small),
+    close,
+    rerender: () => rerender(),
+    isOpen: (title) => !!current && (!title || $('#panel-title').textContent === title),
+    tab: () => current?.tab,
+  });
+  initEvents({
     open: (t, p, small) => open(t, p, small),
     close,
     rerender: () => rerender(),

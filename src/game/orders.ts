@@ -1,5 +1,6 @@
 import { ITEMS, BUILDINGS, CROPS, TREES, ANIMALS, FISH } from './data';
 import { S, save, takeAll, addCoins, addXP, now, hasAll, type Order } from './state';
+import { track } from './tasks';
 
 const NAMES = [
   'Баба Фатме', 'Дядо Иван', 'Айше', 'Мехмед', 'Леля Мария', 'Хасан', 'Елена', 'Салих', 'Бай Петър', 'Зюмбюл',
@@ -113,6 +114,7 @@ export function deliver(o: Order) {
   addCoins(coins);
   addXP(xp);
   S.stats.orders++;
+  track('order');
   const i = S.orders.indexOf(o);
   if (i >= 0) S.orders[i] = newOrder();
   save();

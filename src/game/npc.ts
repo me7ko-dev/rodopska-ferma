@@ -3,6 +3,7 @@ import { instance, animationsOf } from '../engine/assets';
 import { ITEMS, CARS } from './data';
 import { S, save, takeAll, addCoins, addXP, count, VISIT } from './state';
 import { makeable } from './orders';
+import { track } from './tasks';
 import { DRIVE, ROAD_Z, FARM } from '../world/layout';
 import { marker, removeMarker, flyTo, type Marker } from './fx';
 import { icon } from '../ui/icons';
@@ -143,6 +144,7 @@ export class People {
       addCoins(w.coins);
       addXP(w.xp);
       S.stats.visitors++;
+      track('visitor');
       save();
       const pos = w.obj.position.clone().setY(2.2);
       flyTo('coin', pos, '#hud-coins', 4);

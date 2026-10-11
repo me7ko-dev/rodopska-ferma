@@ -3,6 +3,7 @@ import { BUILDINGS, OBSTACLE_REWARD } from './data';
 import { S, save, now, addCoins, addXP, addDiamonds, landRects, VISIT } from './state';
 import { flyTo, popText } from './fx';
 import { rollDrop } from './loot';
+import { track } from './tasks';
 import { FARM } from '../world/layout';
 import type { Farm, View, ObstacleView } from './world';
 
@@ -82,6 +83,7 @@ export function clearObstacle(farm: Farm, v: View) {
     flyTo('star', pos, '#hud-xp', 2, 150);
     popText(`+${c}`, pos.clone().setY(2.5), '#ffe066', true);
     S.stats.cleared = (S.stats.cleared ?? 0) + 1;
+    track('clear');
     if (Math.random() < (v.def.tool === 'dynamite' ? 0.45 : 0.14)) {
       const dia = v.def.tool === 'dynamite' ? 2 : 1;
       addDiamonds(dia);

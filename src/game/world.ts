@@ -8,6 +8,7 @@ import { flyTo, popText, marker, removeMarker, bounce, sparkle, debris, dust, ty
 import { rollDrop } from './loot';
 import { landObstacles } from './obstacles';
 import { isSeasonal } from '../world/seasons';
+import { track } from './tasks';
 import { icon } from '../ui/icons';
 import { UI } from '../ui/api';
 import { sfx } from '../audio/sfx';
@@ -596,6 +597,7 @@ class FieldView implements View {
     this.setVisual();
     if (this.plantObj) bounce(this.plantObj);
     sfx('plant');
+    track('plant', crop, 1);
     popText(`-${c.seed}`, this.root.position.clone().setY(1), '#ffe066');
     save();
     return true;
@@ -611,6 +613,7 @@ class FieldView implements View {
     flyTo('star', pos, '#hud-xp', 1, 120);
     addXP(xp);
     S.stats.harvested += n;
+    track('harvest', c.id, n);
     rollDrop('field', pos.clone().setY(1.6));
     this.e.crop = undefined;
     this.e.planted = this.e.ready = undefined;
@@ -693,6 +696,7 @@ class ProductionView implements View {
       flyTo('star', pos, '#hud-xp', 1, 150);
       addXP(ITEMS[it.out].xp * it.qty);
       S.stats.produced += it.qty;
+      track('produce', it.out, it.qty);
       d.shift();
       got = true;
     }
@@ -940,6 +944,7 @@ class PenView implements View {
       if (!this.isAnimalReady(i)) return;
       if (spaceFor(a.product) < 1) return;
       addItem(a.product, 1);
+      track('collect', a.product, 1);
       const pos = this.root.localToWorld(this.animals[i].obj.position.clone()).setY(1.5);
       flyTo(a.product, pos, '#hud-barn', 1, n * 80);
       n++;
@@ -971,6 +976,7 @@ class PenView implements View {
       n++;
     }
     if (n) {
+      track('feed', this.kind, n);
       popText(`Нахранени: ${n}`, this.root.position.clone().setY(2.5), '#fff');
       sfx(animalSound(this.kind));
       save();
@@ -1149,6 +1155,7 @@ class TreeView implements View {
     const n = this.info.yield;
     if (spaceFor(this.info.fruit) < n) { UI.toast('Силозът е пълен!', 'warn'); sfx('error'); return false; }
     addItem(this.info.fruit, n);
+    track('harvest', this.info.fruit, n);
     const pos = this.root.position.clone().setY(this.height * 0.6);
     flyTo(this.info.fruit, pos, '#hud-silo', n);
     addXP(ITEMS[this.info.fruit].xp);

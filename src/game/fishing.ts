@@ -11,6 +11,7 @@ import { img, icon } from '../ui/icons';
 import { sfx } from '../audio/sfx';
 import type { CameraRig, GameInput, PointerInfo } from '../engine/camera';
 import type { Farm } from './world';
+import { track } from './tasks';
 
 // Риболов на езерото: кей, рибар с въдица, плувка. Хвърляш, чакаш да кълве, засичаш и навиваш, без да скъсаш влакното.
 
@@ -307,6 +308,7 @@ export class Fishing implements GameInput {
     e.n++;
     e.max = Math.max(e.max, this.kg);
     S.stats.fish = (S.stats.fish ?? 0) + 1;
+    track('fish', f.id);
     const xp = ITEMS[f.id].xp + (record ? 3 : 0) + (first ? 5 : 0);
     addXP(xp);
     const got = addItem(f.id, 1);

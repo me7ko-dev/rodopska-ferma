@@ -1,5 +1,6 @@
 import { ITEMS, xpForLevel, START_LAND } from './data';
 import type { CargoState } from './cargo';
+import type { DailyState, FairState } from './tasks';
 
 export interface QueueItem { out: string; qty: number; start: number; end: number }
 export interface AnimalState { fed: number | null; ready: number | null } // fed = кога е нахранено; ready = кога продуктът е готов
@@ -60,6 +61,9 @@ export interface Save {
   cargo?: CargoState; // товарният влак
   fishLog?: Record<string, { n: number; max: number }>; // рибарски дневник: брой и най-голяма (кг)
   fishDone?: boolean; // взета ли е наградата за целия дневник
+  daily?: DailyState; // задачи за деня
+  login?: { day: string; n: number }; // подарък за всеки ден
+  fair?: FairState; // седмичният събор
   mine?: { depth: number; cells: { it: string; hp: number; got?: boolean; cr?: boolean }[]; free: number; day: string }; // рудникът
 }
 

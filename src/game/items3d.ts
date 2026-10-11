@@ -1661,6 +1661,24 @@ const builders: Record<string, () => THREE.Object3D> = {
     return g;
   },
 
+  calendar() {
+    const g = new THREE.Group();
+    g.add(mesh(roundedBox(1.2, 0.18, 1.3, 0.08), mat('#fffaf0', 0.6), [0, 0, 0], 1, [Math.PI / 2 - 0.25, 0, 0]));
+    g.add(mesh(roundedBox(1.22, 0.2, 0.38, 0.06), mat('#e5533d', 0.5), [0, 0.5, -0.12], 1, [Math.PI / 2 - 0.25, 0, 0]));
+    for (const x of [-0.3, 0.3]) g.add(mesh(G.torus, mat('#9aa4ac', 0.3, { metalness: 0.7 }), [x, 0.72, -0.08], [0.1, 0.1, 0.4], [0, Math.PI / 2, 0]));
+    for (let i = 0; i < 9; i++) g.add(mesh(G.box, mat(i === 4 ? '#4fa52c' : '#c9b48a', 0.6), [(i % 3 - 1) * 0.32, 0.1 - Math.floor(i / 3) * 0.26, 0.12 + Math.floor(i / 3) * 0.065], [0.22, 0.17, 0.03], [-0.25, 0, 0]));
+    return g;
+  },
+  gift() {
+    const g = new THREE.Group();
+    g.add(mesh(roundedBox(1.0, 0.8, 1.0, 0.05), mat('#4a90d9', 0.5), [0, 0, 0]));
+    g.add(mesh(roundedBox(1.1, 0.22, 1.1, 0.05), mat('#3a7ac0', 0.5), [0, 0.8, 0]));
+    g.add(mesh(G.box, mat('#ffd23a', 0.4), [0, 0.52, 0], [0.2, 1.06, 1.12]));
+    g.add(mesh(G.box, mat('#ffd23a', 0.4), [0, 0.52, 0], [1.12, 1.06, 0.2]));
+    for (const s of [-1, 1]) g.add(mesh(G.torus, mat('#ffd23a', 0.4), [s * 0.2, 1.12, 0], [0.22, 0.22, 0.8], [0, 0, s * 0.6]));
+    return g;
+  },
+
   // ---- общи иконки ----
   coin() {
     const g = new THREE.Group();

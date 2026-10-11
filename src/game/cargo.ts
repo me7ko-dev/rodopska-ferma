@@ -1,6 +1,7 @@
 import { ITEMS } from './data';
 import { S, save, now, count, takeAll, addCoins, addXP, addDiamonds, addItem, emit, VISIT } from './state';
 import { makeable } from './orders';
+import { track } from './tasks';
 
 // Товарният влак (като кораба в Hay Day): идва на товарната гара до фермата с 3 вагона по 3 сандъка.
 // Всеки напълнен сандък се плаща веднага; ако напълниш всичките 9 — голяма награда.
@@ -108,6 +109,7 @@ export function fillCrate(i: number) {
   const cr = c.crates[i];
   if (!cr || cr.done || !takeAll({ [cr.item]: cr.qty })) return null;
   cr.done = true;
+  track('crate');
   addCoins(cr.coins);
   addXP(cr.xp);
   save();

@@ -1,5 +1,6 @@
 import { ITEMS, MINE_LEVEL, MINE_LOOT } from './data';
 import { S, save, count, takeAll, addItem, addXP, spaceFor } from './state';
+import { track } from './tasks';
 
 // Рудникът „Мадан“: стена от скала 6×5. Кирката разбива една клетка (твърдата — с два удара), динамитът — кръст от 5.
 // Всеки ден има 3 безплатни удара. Когато разкопаеш цялата стена, слизаш на по-дълбок етаж с по-ценни руди.
@@ -62,6 +63,7 @@ export function hit(i: number, tool: 'pickaxe' | 'dynamite'): { found: string[];
     }
   }
   S.stats.mined = (S.stats.mined ?? 0) + 1;
+  track('mine');
   save();
   return { found, broke };
 }
