@@ -29,7 +29,11 @@ import { tickObstacles } from './game/obstacles';
 import { tickCargo, onCargo, CARGO_RETURN } from './game/cargo';
 import { CargoTrain } from './world/cargotrain';
 import { Fishing } from './game/fishing';
-import './game/buildings3d';
+import { mineEntrance } from './game/buildings3d';
+import { mine } from './game/mine';
+import { MINE_LEVEL } from './game/data';
+import { MINE_POS } from './world/layout';
+import { marker } from './game/fx';
 import * as ordersMod from './game/orders';
 import * as dataMod from './game/data';
 import * as stateMod from './game/state';
@@ -174,6 +178,17 @@ async function boot() {
 
   const fishing = new Fishing(scene, farm, rig);
   farm.extraPick.push({ obj: fishing.proxy, tap: () => fishing.tapPier() });
+  // рудникът в скалите
+  const mineObj = mineEntrance();
+  mineObj.position.set(MINE_POS.x, 0, MINE_POS.z);
+  scene.add(mineObj);
+  const mineCart = mineObj.getObjectByName('cart')!;
+  const mineProxy = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 10), new THREE.MeshBasicMaterial({ visible: false }));
+  mineProxy.position.set(MINE_POS.x + 1, 3, MINE_POS.z);
+  scene.add(mineProxy);
+  farm.extraPick.push({ obj: mineProxy, tap: () => UI.openMine() });
+  const mineMk = marker(new THREE.Vector3(MINE_POS.x + 1.5, 5.2, MINE_POS.z), `<img src="${icon('pickaxe')}">`, 'mk bubble small');
+  mineMk.onClick = () => UI.openMine();
   const village = new Village(scene, farm.extraPick);
   const vehicles = new Vehicles(scene, farm, rig);
   const people = new People(scene, farm);
@@ -262,6 +277,8 @@ async function boot() {
     if (!VISIT && performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); tickObstacles(farm); tickCargo(); }
     cargoTrain.update(dt);
     fishing.update(dt, engine.time.value);
+    mineCart.position.x = 4.5 + Math.sin(engine.time.value * 0.25) * 1.6;
+    mineMk.visible = !VISIT && S.level >= MINE_LEVEL && (mine()?.free ?? 0) > 0 && rig.distance < 90;
   });
   engine.start();
   // останалите модели (сгради за купуване, коли, къщи) — тихо във фонов режим

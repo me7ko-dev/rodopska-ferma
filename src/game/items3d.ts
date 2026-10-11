@@ -237,6 +237,39 @@ function lakeFish(o: { body: string; belly: string; fin: string; len?: number; h
   return g;
 }
 
+/** Буца скала (за рудите). */
+function rockLump(color: string, seed: number, s = 0.6) {
+  const geo = new THREE.IcosahedronGeometry(s, 1);
+  const r = rng(seed);
+  const p = geo.attributes.position as THREE.BufferAttribute;
+  const cache = new Map<string, number>();
+  for (let i = 0; i < p.count; i++) {
+    const key = `${p.getX(i).toFixed(3)},${p.getY(i).toFixed(3)},${p.getZ(i).toFixed(3)}`;
+    let k = cache.get(key);
+    if (k === undefined) { k = 0.8 + r() * 0.35; cache.set(key, k); }
+    p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.8, p.getZ(i) * k);
+  }
+  geo.computeVertexNormals();
+  return mesh(geo, mat(color, 0.85, { flatShading: true }), [0, s * 0.7, 0]);
+}
+
+/** Кристал: шестостенна призма с връх. */
+function crystal(color: string, h: number, r: number, opacity = 0.85, emissive = '#000000') {
+  const g = new THREE.Group();
+  const m = mat(color, 0.08, { transparent: true, opacity, metalness: 0.1, emissive, emissiveIntensity: 0.25, flatShading: true });
+  g.add(mesh(new THREE.CylinderGeometry(r, r, h, 6), m, [0, h / 2, 0]));
+  g.add(mesh(new THREE.ConeGeometry(r, r * 1.6, 6), m, [0, h + r * 0.8, 0]));
+  return g;
+}
+
+/** Кюлче (пресечена пирамида). */
+function ingot(color: string, metal = 0.75) {
+  const s = new THREE.Shape([new THREE.Vector2(-0.5, 0), new THREE.Vector2(0.5, 0), new THREE.Vector2(0.4, 0.26), new THREE.Vector2(-0.4, 0.26)]);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.4, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2 });
+  geo.translate(0, 0, -0.2);
+  return mesh(geo, mat(color, 0.22, { metalness: metal }));
+}
+
 /** Чиния с храна. */
 function plate(fill: (b: THREE.Group, r: () => number) => void, color = '#f6f1e6') {
   const g = new THREE.Group();
@@ -1299,6 +1332,145 @@ const builders: Record<string, () => THREE.Object3D> = {
     for (let i = 0; i < 7; i++) b.add(mesh(G.box, mat(i % 3 ? '#e8d8b8' : '#e0302a', 0.6), [(r() - 0.5) * 0.7, 0.33, (r() - 0.5) * 0.7], [0.14, 0.07, 0.12], [0, r() * 3, 0]));
     b.add(mesh(G.sphere, mat('#4fa52c', 0.6), [0.15, 0.34, -0.1], [0.1, 0.03, 0.06]));
   }),
+
+  // ---- рудник ----
+  ore_lead() {
+    const g = new THREE.Group();
+    g.add(rockLump('#6a6e76', 11));
+    const r = rng(12);
+    for (let i = 0; i < 6; i++) g.add(mesh(G.box, mat('#c8ccd4', 0.15, { metalness: 0.8 }), [(r() - 0.5) * 0.7, 0.5 + r() * 0.45, 0.25 + r() * 0.25], 0.16 + r() * 0.08, [r(), r(), r()]));
+    return g;
+  },
+  ore_zinc() {
+    const g = new THREE.Group();
+    g.add(rockLump('#7a6650', 21));
+    const r = rng(22);
+    for (let i = 0; i < 7; i++) g.add(mesh(new THREE.OctahedronGeometry(0.1 + r() * 0.06, 0), mat('#d8a840', 0.2, { metalness: 0.3, flatShading: true }), [(r() - 0.5) * 0.75, 0.45 + r() * 0.5, 0.25 + r() * 0.3]));
+    return g;
+  },
+  ore_silver() {
+    const g = new THREE.Group();
+    g.add(rockLump('#4a4a50', 31));
+    const r = rng(32);
+    for (let i = 0; i < 5; i++) g.add(mesh(G.box, mat('#eef2f6', 0.1, { metalness: 0.95 }), [(r() - 0.5) * 0.6, 0.5 + r() * 0.4, 0.42], [0.5 + r() * 0.3, 0.05, 0.05], [0, 0, (r() - 0.5) * 1.6]));
+    return g;
+  },
+  ore_gold() {
+    const g = new THREE.Group();
+    const gold = mat('#ffc928', 0.2, { metalness: 0.9, flatShading: true });
+    const r = rng(41);
+    for (let i = 0; i < 5; i++) {
+      const s = 0.18 + r() * 0.12;
+      g.add(mesh(new THREE.DodecahedronGeometry(s, 0), gold, [(r() - 0.5) * 0.7, s * 0.8, (r() - 0.5) * 0.5], [1, 0.7, 1], [r() * 3, r() * 3, 0]));
+    }
+    return g;
+  },
+  quartz() {
+    const g = new THREE.Group();
+    g.add(rockLump('#8a8278', 51, 0.45));
+    const angles: [number, number, number][] = [[0, 0, 0], [0.4, 0, 0.35], [-0.35, 0.2, -0.3], [0.2, -0.4, -0.5], [-0.1, 0.5, 0.45]];
+    angles.forEach(([x, z, rz], i) => { const c = crystal('#f4f8ff', 0.7 - i * 0.08, 0.13 - i * 0.012, 0.7); c.position.set(x * 0.6, 0.45, z * 0.5); c.rotation.set(z * 0.6, 0, rz); g.add(c); });
+    return g;
+  },
+  fluorite() {
+    const g = new THREE.Group();
+    const r = rng(61);
+    for (let i = 0; i < 6; i++) {
+      const c = i % 3 === 2 ? '#9a6ad8' : '#4ad08a';
+      g.add(mesh(G.box, mat(c, 0.08, { transparent: true, opacity: 0.82, emissive: c, emissiveIntensity: 0.15 }), [(r() - 0.5) * 0.7, 0.25 + r() * 0.5, (r() - 0.5) * 0.5], 0.28 + r() * 0.12, [r() * 0.8, r() * 0.8, r() * 0.8]));
+    }
+    return g;
+  },
+  amethyst() {
+    const g = new THREE.Group();
+    // жеода: половин камък с лилави кристали отвътре
+    g.add(mesh(new THREE.SphereGeometry(0.62, 16, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat('#8a8070', 0.9, { side: THREE.DoubleSide }), [0, 0.62, 0]));
+    g.add(mesh(G.cyl, mat('#e8e0d8', 0.6), [0, 0.6, 0], [0.62, 0.03, 0.62]));
+    const r = rng(71);
+    for (let i = 0; i < 9; i++) {
+      const a = r() * Math.PI * 2, d = r() * 0.4;
+      const c = crystal(i % 2 ? '#9a4ad8' : '#b46ae8', 0.25 + r() * 0.2, 0.07, 0.9, '#6a2aa8');
+      c.position.set(Math.cos(a) * d, 0.45, Math.sin(a) * d);
+      c.rotation.set((r() - 0.5) * 0.6, 0, (r() - 0.5) * 0.6);
+      g.add(c);
+    }
+    return g;
+  },
+  bar_lead() { const g = new THREE.Group(); g.add(ingot('#5a5e66', 0.5)); return g; },
+  bar_zinc() { const g = new THREE.Group(); g.add(ingot('#a8b4be', 0.6)); return g; },
+  bar_silver() {
+    const g = new THREE.Group();
+    const a = ingot('#e8ecf0', 0.95); a.position.set(-0.28, 0, 0); g.add(a);
+    const b = ingot('#e8ecf0', 0.95); b.position.set(0.28, 0, 0.05); g.add(b);
+    const c = ingot('#f4f6f8', 0.95); c.position.set(0, 0.3, 0); c.rotation.y = 0.1; g.add(c);
+    return g;
+  },
+  bar_gold() {
+    const g = new THREE.Group();
+    const a = ingot('#ffc928', 0.95); a.position.set(-0.28, 0, 0); g.add(a);
+    const b = ingot('#ffc928', 0.95); b.position.set(0.28, 0, 0.05); g.add(b);
+    const c = ingot('#ffd54a', 0.95); c.position.set(0, 0.3, 0); c.rotation.y = 0.1; g.add(c);
+    return g;
+  },
+  bracelet() {
+    const g = new THREE.Group();
+    const silver = mat('#eef1f4', 0.12, { metalness: 0.95 });
+    g.add(mesh(new THREE.TorusGeometry(0.55, 0.08, 12, 40), silver, [0, 0.55, 0], 1, [Math.PI / 2 - 0.5, 0, 0]));
+    const ring = new THREE.Group();
+    for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; ring.add(mesh(new THREE.TorusGeometry(0.07, 0.018, 6, 14), silver, [Math.cos(a) * 0.55, Math.sin(a) * 0.55, 0.06])); }
+    ring.position.y = 0.55;
+    ring.rotation.x = Math.PI / 2 - 0.5;
+    g.add(ring);
+    return g;
+  },
+  earrings() {
+    const g = new THREE.Group();
+    const silver = mat('#eef1f4', 0.12, { metalness: 0.95 });
+    for (const x of [-0.28, 0.28]) {
+      g.add(mesh(new THREE.TorusGeometry(0.1, 0.02, 6, 16), silver, [x, 1.05, 0]));
+      g.add(mesh(G.cyl, silver, [x, 0.85, 0], [0.015, 0.3, 0.015]));
+      g.add(mesh(new THREE.OctahedronGeometry(0.16, 0), mat('#4ad08a', 0.05, { transparent: true, opacity: 0.85, emissive: '#2a9a5a', emissiveIntensity: 0.3 }), [x, 0.55, 0], [1, 1.4, 1]));
+      g.add(mesh(new THREE.TorusGeometry(0.17, 0.02, 6, 20), silver, [x, 0.55, 0]));
+    }
+    return g;
+  },
+  pafti() {
+    const g = new THREE.Group();
+    const silver = mat('#e8ecf0', 0.15, { metalness: 0.95 });
+    for (const s of [-1, 1]) {
+      const p = new THREE.Group();
+      p.add(mesh(G.sphere, silver, [0, 0, 0], [0.42, 0.55, 0.12]));
+      for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; p.add(mesh(G.sphereLo, silver, [Math.cos(a) * 0.36, Math.sin(a) * 0.47, 0.08], 0.05)); }
+      for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; p.add(mesh(new THREE.TorusGeometry(0.07, 0.015, 6, 12), silver, [Math.cos(a) * 0.2, Math.sin(a) * 0.27, 0.11])); }
+      p.add(mesh(new THREE.OctahedronGeometry(0.1, 0), mat(s < 0 ? '#d8283a' : '#2ab06a', 0.05, { emissive: s < 0 ? '#8a0a1a' : '#0a6a3a', emissiveIntensity: 0.3 }), [0, 0, 0.13]));
+      p.position.set(s * 0.45, 0.6, 0);
+      p.rotation.z = s * 0.25;
+      g.add(p);
+    }
+    g.add(mesh(G.box, silver, [0, 0.6, 0.04], [0.2, 0.1, 0.06]));
+    return g;
+  },
+  ring() {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.TorusGeometry(0.4, 0.08, 12, 36), mat('#ffc928', 0.18, { metalness: 0.95 }), [0, 0.45, 0], 1, [0.4, 0, 0]));
+    g.add(mesh(G.cyl, mat('#ffc928', 0.18, { metalness: 0.95 }), [0, 0.86, 0.15], [0.14, 0.1, 0.14]));
+    g.add(mesh(new THREE.OctahedronGeometry(0.2, 0), mat('#9a4ad8', 0.05, { transparent: true, opacity: 0.9, emissive: '#6a2aa8', emissiveIntensity: 0.4 }), [0, 1.0, 0.15], [1, 0.8, 1]));
+    return g;
+  },
+  necklace() {
+    const g = new THREE.Group();
+    const gold = mat('#ffc928', 0.18, { metalness: 0.95 });
+    for (let i = 0; i <= 18; i++) {
+      const a = Math.PI * (i / 18);
+      const cols = ['#f4f8ff', '#4ad08a', '#9a4ad8'];
+      g.add(mesh(G.sphere, i % 2 ? gold : mat(cols[(i / 2) % 3 | 0], 0.05, { transparent: true, opacity: 0.85 }), [Math.cos(a) * 0.62, 1.1 - Math.sin(a) * 0.62, 0], i % 2 ? 0.05 : 0.08));
+    }
+    const pend = crystal('#b46ae8', 0.3, 0.1, 0.9, '#6a2aa8');
+    pend.rotation.z = Math.PI;
+    pend.position.set(0, 0.42, 0);
+    g.add(pend);
+    return g;
+  },
 
   // ---- материали и инструменти ----
   bolt() {

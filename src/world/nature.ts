@@ -2,13 +2,15 @@ import * as THREE from 'three';
 import { rng, fbm } from '../engine/noise';
 import { instancedModel, type Placement } from '../engine/instancing';
 import { windify, addWind } from '../engine/wind';
-import { heightAt, roadZAt, ROAD_W, FARM, VILLAGE_PLOTS, POND, DRIVE, ROAD_Z, RAIL, RAIL_Z, STATIONS, CITY, SIDING, cargoZAt } from './layout';
+import { heightAt, roadZAt, ROAD_W, FARM, VILLAGE_PLOTS, POND, DRIVE, ROAD_Z, RAIL, RAIL_Z, STATIONS, CITY, SIDING, cargoZAt, MINE_POS } from './layout';
 
 /** Може ли да расте нещо тук (не е на пътя, във фермата, в двор на къща). */
 function free(x: number, z: number, margin = 0) {
   if (Math.abs(z - roadZAt(x)) < ROAD_W / 2 + 2 + margin) return false;
   // релсите, гарите и градът
   if (x > RAIL.west - 12 && x < RAIL.east + 12 && Math.abs(z - RAIL_Z) < 4 + margin * 1.5) return false;
+  // рудникът
+  if (Math.abs(x - MINE_POS.x) < 14 + margin && Math.abs(z - MINE_POS.z) < 14 + margin) return false;
   // товарният коловоз
   if (x > SIDING.w0 - 8 && x < SIDING.e1 + 8 && Math.abs(z - cargoZAt(x)) < 4.5 + margin * 1.5) return false;
   for (const st of STATIONS) if (Math.abs(x - st.x) < (st.city ? 40 : 28) + margin && z > RAIL_Z - 3 && z < RAIL_Z + 20 + margin) return false;

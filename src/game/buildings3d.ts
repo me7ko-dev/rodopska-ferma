@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Kit, M, kitMeshes } from '../engine/kit';
-import { registerModel } from '../engine/assets';
+import { registerModel, instance } from '../engine/assets';
+import { signTexture } from '../world/railway';
 import { itemModel } from './items3d';
 
 // Сгради, направени с код (за неща, за които няма готов модел): рибарница, рудник, топилня, филигранна работилница, кей.
@@ -86,6 +87,133 @@ function smokehouse() {
 }
 
 registerModel('pb_smokehouse', smokehouse);
+
+const glowMat = new THREE.MeshStandardMaterial({ color: '#ffb347', emissive: '#ff7a1a', emissiveIntensity: 2.2, roughness: 0.5 });
+glowMat.userData.noSnow = true;
+
+/** Топилня: каменна пещ с жарава, комин, мех, наковалня и купчина руда под навес. */
+function smelter() {
+  const g = new THREE.Group();
+  const k = new Kit();
+  k.box('trim', 5.4, 0.3, 4.6, W.stoneDark, 0, 0.15, 0, 0.05);
+  // пещта — каменна кула (осмоъгълна, стеснява се нагоре)
+  k.add('trim', new THREE.CylinderGeometry(1.15, 1.55, 3.0, 8), W.stone, M.at(-0.9, 1.8, -0.4));
+  for (let i = 0; i < 5; i++) k.add('trim', new THREE.CylinderGeometry(1.57 - i * 0.08, 1.57 - i * 0.08, 0.08, 8), W.stoneDark, M.at(-0.9, 0.6 + i * 0.6, -0.4));
+  k.cyl('trim', 0.42, 2.6, W.stoneDark, M.at(-0.9, 4.5, -0.4), 8, 0.5);
+  k.cyl('trim', 0.5, 0.18, '#3a3a3a', M.at(-0.9, 5.8, -0.4), 8);
+  // мех
+  k.box('trim', 0.9, 0.35, 1.2, '#6e4626', 0.6, 0.85, -0.6, 0.05, [0, 0, 0.25]);
+  k.cyl('trim', 0.08, 0.8, '#3a3a3a', M.at(0.1, 0.85, -0.5, 0, 0, Math.PI / 2), 8);
+  // наковалня на пън
+  k.cyl('trim', 0.35, 0.6, W.log, M.at(1.4, 0.6, 1.2), 10);
+  k.box('trim', 0.8, 0.25, 0.35, '#3a3d40', 1.4, 1.02, 1.2, 0.03);
+  k.box('trim', 0.4, 0.15, 0.25, '#3a3d40', 1.85, 1.05, 1.2, 0.03);
+  // навес на стълбове
+  for (const [x, z] of [[-2.5, -2.1], [2.5, -2.1], [-2.5, 2.1], [2.5, 2.1]]) k.box('trim', 0.2, 2.9, 0.2, W.logDark, x, 1.6, z);
+  k.box('trim', 5.6, 0.12, 4.9, W.roof, 0.0, 3.15, 0, 0.02, [0.12, 0, 0]);
+  // купчини руда
+  for (let i = 0; i < 9; i++) k.add('trim', new THREE.IcosahedronGeometry(0.22 + (i % 3) * 0.06, 0), i % 2 ? '#6b6e74' : '#8a7a5a', M.at(1.6 + (i % 3) * 0.32, 0.4 + Math.floor(i / 3) * 0.12, -1.3 + Math.floor(i / 3) * 0.3));
+  // кюлчета на рафт
+  k.box('trim', 1.4, 0.08, 0.5, W.plank, 1.4, 1.3, -1.9);
+  for (let i = 0; i < 4; i++) k.box(i < 2 ? 'chrome' : 'gold', 0.28, 0.12, 0.16, i < 2 ? '#d8dce0' : '#ffcc3a', 0.95 + i * 0.3, 1.41, -1.9, 0.02);
+  g.add(kitMeshes(k));
+  // жаравата в отвора на пещта
+  const fire = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16), glowMat);
+  fire.position.set(-0.9, 1.15, 1.13);
+  fire.rotation.x = -0.3;
+  g.add(fire);
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.9, 0.3), new THREE.MeshStandardMaterial({ color: '#1a1410', roughness: 1 }));
+  mouth.position.set(-0.9, 1.15, 1.0);
+  g.add(mouth);
+  g.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+registerModel('pb_smelter', smelter);
+
+/** Филигранна работилница: бяла родопска къща с кафяв чардак, витрина и табела. */
+function jeweler() {
+  const g = new THREE.Group();
+  const k = new Kit();
+  const w = 4.6, d = 3.8;
+  k.box('trim', w + 0.4, 0.4, d + 0.4, W.stone, 0, 0.2, 0, 0.05);
+  // каменен приземен етаж и бял горен етаж с издаден чардак
+  k.box('trim', w, 2.0, d, '#b5ab9a', 0, 1.4, 0, 0.04);
+  k.box('trim', w + 0.6, 1.9, d + 0.5, '#f4efe4', 0, 3.35, 0.25, 0.04);
+  for (let i = 0; i < 6; i++) k.box('trim', 0.1, 1.9, 0.08, W.logDark, -w / 2 - 0.25 + i * ((w + 0.5) / 5), 3.35, d / 2 + 0.52);
+  k.box('trim', w + 0.7, 0.14, 0.14, W.logDark, 0, 2.45, d / 2 + 0.52);
+  k.box('trim', w + 0.7, 0.14, 0.14, W.logDark, 0, 4.25, d / 2 + 0.52);
+  // покрив от каменни плочи (тикли)
+  const roof = new THREE.ConeGeometry(1, 1, 4, 1);
+  roof.rotateY(Math.PI / 4);
+  k.add('trim', roof, '#6f6a62', M.at(0, 5.05, 0.25, 0, 0, 0, (w + 1.6) * 0.72, 1.7, (d + 1.6) * 0.72));
+  k.box('trim', 0.5, 1.3, 0.5, '#f4efe4', 1.2, 5.6, -0.6, 0.03);
+  // врата, витрина с бижута, прозорци горе
+  k.box('trim', 1.0, 1.8, 0.1, W.door, -1.2, 1.3, d / 2 + 0.03);
+  k.box('glass', 1.7, 1.1, 0.08, '#9fc4d8', 0.9, 1.55, d / 2 + 0.04);
+  k.box('trim', 1.9, 0.12, 0.25, W.logDark, 0.9, 0.95, d / 2 + 0.1);
+  for (let i = 0; i < 3; i++) k.box('chrome', 0.2, 0.2, 0.06, '#e0e4e8', 0.4 + i * 0.5, 1.15, d / 2 + 0.16, 0.02);
+  for (const x of [-1.4, 0, 1.4]) k.box('glass', 0.7, 0.8, 0.08, W.glass, x, 3.45, d / 2 + 0.56);
+  g.add(kitMeshes(k));
+  // табела с пръстен
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.55), new THREE.MeshStandardMaterial({ map: signTexture('ФИЛИГРАН', '#3a2a5a', '#ffe9b0', 512, 108), roughness: 0.6 }));
+  sign.position.set(0, 2.2, d / 2 + 0.07);
+  g.add(sign);
+  g.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+registerModel('pb_jeweler', jeweler);
+
+/** Входът на рудника: скали, дървена рамка, тъмен тунел, релси с вагонетка, фенери и табела. Гледа към +X. */
+export function mineEntrance() {
+  const g = new THREE.Group();
+  // скалите (хълмче)
+  const rocks: [string, number, number, number, number][] = [['n_rock1', 15, -6, 0, 0.4], ['n_rock3', 11, -4, -6, 2.1], ['n_rock2', 10, -4.5, 6, 4.0], ['n_rock1', 7, -1, -8.5, 1.2], ['n_rock3', 6, -1.5, 8, 3.1]];
+  for (const [n, s, x, z, r] of rocks) {
+    const o = instance(n, s);
+    o.position.set(x, -0.6, z);
+    o.rotation.y = r;
+    g.add(o);
+  }
+  const k = new Kit();
+  // дървена рамка на входа
+  for (const z of [-1.6, 1.6]) k.box('trim', 0.45, 3.4, 0.45, W.logDark, 0.6, 1.7, z, 0.04);
+  k.box('trim', 0.55, 0.5, 4.2, W.log, 0.6, 3.5, 0, 0.04);
+  for (const z of [-1.0, 1.0]) k.box('trim', 0.3, 0.3, 1.0, W.logDark, 0.6, 3.05, z * 1.15, 0.02, [z * 0.6, 0, 0]);
+  // тъмнината вътре
+  k.box('trim', 2.5, 3.0, 3.0, '#0a0806', -1.0, 1.5, 0);
+  // релси и траверси навън
+  for (let x = -0.5; x < 7; x += 0.7) k.box('trim', 0.22, 0.1, 1.5, '#5b4632', x, 0.05, 0);
+  for (const z of [-0.45, 0.45]) k.box('chrome', 7.6, 0.08, 0.07, '#9a9ca0', 3.2, 0.13, z);
+  // табела
+  for (const z of [3.2, 5.2]) k.box('trim', 0.15, 2.2, 0.15, W.logDark, 2.0, 1.1, z);
+  g.add(kitMeshes(k));
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.6), new THREE.MeshStandardMaterial({ map: signTexture('РУДНИК', '#3a2a1a', '#ffe9b0', 512, 128), roughness: 0.6 }));
+  sign.position.set(2.1, 1.9, 4.2);
+  sign.rotation.y = Math.PI / 2;
+  g.add(sign);
+  // фенери до входа
+  const lampMat = new THREE.MeshStandardMaterial({ color: '#fff2c4', emissive: '#ffb347', emissiveIntensity: 1.5 });
+  lampMat.userData.noSnow = true;
+  for (const z of [-2.0, 2.0]) {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.35, 0.25), lampMat);
+    l.position.set(0.95, 2.7, z);
+    g.add(l);
+  }
+  // вагонетка с руда
+  const cart = new THREE.Group();
+  const ck = new Kit();
+  ck.box('trim', 1.6, 0.7, 1.1, '#6a6e74', 0, 0.75, 0, 0.05);
+  ck.box('trim', 1.4, 0.1, 0.9, '#3a3a3a', 0, 1.08, 0);
+  for (let i = 0; i < 7; i++) ck.add('trim', new THREE.IcosahedronGeometry(0.2, 0), i % 3 ? '#7a6a4a' : '#c8b8e8', M.at(-0.5 + (i % 4) * 0.33, 1.15 + (i % 2) * 0.08, -0.2 + Math.floor(i / 4) * 0.4));
+  for (const x of [-0.5, 0.5]) for (const z of [-0.45, 0.45]) ck.cyl('trim', 0.2, 0.08, '#2a2a2a', M.at(x, 0.22, z, Math.PI / 2, 0, 0), 12);
+  cart.add(kitMeshes(ck));
+  cart.position.set(4.5, 0.05, 0);
+  cart.rotation.y = Math.PI / 2;
+  cart.name = 'cart';
+  g.add(cart);
+  g.traverse((o) => { if ((o as THREE.Mesh).isMesh && o.parent !== g) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
 
 /** Дървен кей с колчета (за риболова). Дължина по +Z. */
 export function pier(len = 5.5) {

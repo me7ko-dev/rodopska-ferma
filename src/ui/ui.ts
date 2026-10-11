@@ -7,6 +7,8 @@ import { cargo, cargoUnlocked, canFill, fillCrate, callNow, filledCount, CARGO_L
 import { CARGO_VIEW } from '../world/cargotrain';
 import { FISH } from '../game/data';
 import { FISHLOG_REWARD, fishLogComplete } from '../game/fishing';
+import { mine, hit, wallDone, descend, pickLeft, mineTools } from '../game/mine';
+import { MINE_LEVEL } from '../game/data';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
@@ -721,6 +723,68 @@ function openDeco(v: View) {
 }
 
 // =====================================================================
+// РУДНИК
+let mineTool: 'pickaxe' | 'dynamite' = 'pickaxe';
+let mineFx: number[] = [];
+function openMine() {
+  if (!mine()) { UI.toast(`⛏ Рудникът се отваря на ниво ${MINE_LEVEL}`, 'info'); sfx('error'); return; }
+  mineFx = [];
+  open(`Рудник — етаж ${mine()!.depth}`, {
+    render: () => {
+      const m = mine()!;
+      const t = mineTools();
+      let html = `<div class="panel-desc">Копай с кирка — по-тъмната скала иска два удара. Динамитът взривява кръст от 5 камъка. Днес имаш <b>${t.free}</b> безплатни удара.</div>
+        <div class="minetools"><div class="mtool ${mineTool === 'pickaxe' ? 'on' : ''}" data-act="mt" data-t="pickaxe">${img('pickaxe', '')}<b>${t.free ? `${t.free} 🎁 + ` : ''}${t.pickaxe}</b></div>
+        <div class="mtool ${mineTool === 'dynamite' ? 'on' : ''}" data-act="mt" data-t="dynamite">${img('dynamite', '')}<b>${t.dynamite}</b></div>
+        <span class="sp"></span><button class="btn xs gold" data-act="buypick">+1 ${img('pickaxe')} ${img('coin')}50</button></div><div class="minewall">`;
+      html += m.cells.map((c, i) => {
+        const fx = mineFx.includes(i) ? ' fx' : '';
+        const glint = ['ore_gold', 'amethyst', 'fluorite', 'quartz', 'ore_silver'].includes(c.it) ? ' glint' : '';
+        if (c.hp > 0) return `<div class="mc rock${c.hp > 1 ? ' hard' : ''}${c.cr ? ' cracked' : ''}${glint}${fx}" style="--r:${(i * 47) % 360}deg" data-act="dig" data-i="${i}"></div>`;
+        return `<div class="mc dug${fx}" ${c.it && !c.got ? `data-act="pickleft" data-i="${i}"` : ''}>${c.it ? img(c.it, c.got ? 'got' : '') : ''}</div>`;
+      }).join('');
+      html += '</div>';
+      if (wallDone()) html += `<div class="btns"><button class="btn gold" data-act="descend">⛏ Слез на етаж ${m.depth + 1} (по-ценни руди)</button></div>`;
+      mineFx = [];
+      return html;
+    },
+    actions: {
+      mt: (el) => { mineTool = el.dataset.t as 'pickaxe' | 'dynamite'; sfx('tap'); },
+      buypick: () => {
+        if (!spend(50)) { UI.toast('Нямаш достатъчно монети', 'warn'); sfx('error'); return; }
+        addItem('pickaxe', 1, true);
+        sfx('coin');
+      },
+      dig: (el) => {
+        const i = +el.dataset.i!;
+        const t = mineTools();
+        if (mineTool === 'pickaxe' && !t.free && !t.pickaxe) { UI.toast('Нямаш кирка — купи от бутона горе', 'warn'); sfx('error'); return; }
+        if (mineTool === 'dynamite' && !t.dynamite) { UI.toast('Нямаш динамит — купи от Магазина → Инструменти', 'warn'); sfx('error'); return; }
+        const r = hit(i, mineTool);
+        if (!r) return;
+        sfx(mineTool === 'dynamite' ? 'boom' : 'pick');
+        if (mineTool === 'dynamite' && navigator.vibrate) navigator.vibrate(80);
+        mineFx = r.broke.length ? r.broke : [i];
+        const rect = el.getBoundingClientRect();
+        r.found.forEach((id, k) => {
+          flyTo(id, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }, '#hud-barn', 1, k * 120);
+          if (['quartz', 'fluorite', 'amethyst', 'ore_gold'].includes(id)) sfx('crystal');
+          UI.toast(`Намери: ${ITEMS[id].name}!`, 'ok');
+        });
+        if (r.broke.some((j) => mine()!.cells[j].it && !mine()!.cells[j].got)) UI.toast('Хамбарът е пълен — рудата остава в скалата', 'warn');
+      },
+      pickleft: (el) => { if (pickLeft(+el.dataset.i!)) sfx('collect'); else UI.toast('Хамбарът е пълен', 'warn'); },
+      descend: () => {
+        if (!descend()) return;
+        sfx('levelup');
+        $('#panel-title').textContent = `Рудник — етаж ${mine()!.depth}`;
+        UI.toast(`⛏ Етаж ${mine()!.depth}! Тук има повече сребро, злато и кристали.`, 'ok');
+      },
+    },
+  });
+}
+
+// =====================================================================
 // РИБАРСКИ ДНЕВНИК
 function openFishLog() {
   open('Рибарски дневник', {
@@ -1211,6 +1275,7 @@ export function bindUI(ctx: Ctx) {
     openSocial,
     openObstacle,
     openFishLog,
+    openMine,
     placing(on: boolean, ok: boolean) {
       $('#placebar').classList.toggle('show', on);
       ($('#pok') as HTMLButtonElement).classList.toggle('gray', !ok);

@@ -42,6 +42,9 @@ export function cargoZAt(x: number) {
   return SIDING_Z;
 }
 
+/** Входът на рудника — в скалите на запад от фермата. */
+export const MINE_POS = { x: -88, z: -21 };
+
 /** Гарите: до фермата и в града (x на средата на перона). */
 export const STATIONS = [
   { x: 28, name: 'РОДОПИ', city: false },

@@ -29,6 +29,7 @@ export interface UIApi {
   openSocial(tab?: string): void;
   openObstacle(v: View): void;
   openFishLog(): void;
+  openMine(): void;
 }
 
 export const UI = {} as UIApi;

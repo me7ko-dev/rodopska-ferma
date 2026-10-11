@@ -126,7 +126,7 @@ export const TOOL_SHOP: { id: string; price: number; qty: number }[] = [
   { id: 'shovel', price: 55, qty: 1 },
   { id: 'saw', price: 95, qty: 1 },
   { id: 'dynamite', price: 170, qty: 1 },
-  { id: 'pickaxe', price: 110, qty: 1 },
+  { id: 'pickaxe', price: 50, qty: 1 },
   { id: 'bait', price: 30, qty: 5 },
 ];
 /** Колко диаманта струва един липсващ материал. */
@@ -154,6 +154,38 @@ export const FISH: { id: string; min: number; max: number; w: number; power: num
   { id: 'f_pike', min: 1.5, max: 11, w: 5, power: 0.8, level: 12, rare: 2 },
   { id: 'f_catfish', min: 4, max: 45, w: 2.2, power: 0.95, level: 15, rare: 2 },
   { id: 'f_goldfish', min: 0.1, max: 0.35, w: 0.7, power: 0.3, level: 6, rare: 3 },
+];
+
+// --- рудник: руди и кристали ---
+item('ore_lead', 'Оловна руда', 'ore', 28, 3, 9);
+item('ore_zinc', 'Цинкова руда', 'ore', 30, 3, 9);
+item('ore_silver', 'Сребърна руда', 'ore', 64, 6, 9);
+item('ore_gold', 'Златни зрънца', 'ore', 120, 10, 9);
+item('quartz', 'Кварцов кристал', 'ore', 58, 6, 9);
+item('fluorite', 'Флуорит', 'ore', 90, 8, 9);
+item('amethyst', 'Аметист', 'ore', 150, 12, 9);
+// кюлчета (Топилня) и бижута (Филигранна работилница)
+item('bar_lead', 'Оловно кюлче', 'food', 110, 8, 10);
+item('bar_zinc', 'Цинково кюлче', 'food', 115, 8, 10);
+item('bar_silver', 'Сребърно кюлче', 'food', 230, 16, 10);
+item('bar_gold', 'Златно кюлче', 'food', 420, 28, 10);
+item('bracelet', 'Сребърна гривна', 'food', 320, 22, 12);
+item('earrings', 'Обеци с флуорит', 'food', 520, 34, 12);
+item('pafti', 'Родопски пафти', 'food', 700, 45, 13);
+item('ring', 'Пръстен с аметист', 'food', 950, 60, 14);
+item('necklace', 'Гердан от кристали', 'food', 1500, 90, 16);
+
+export const MINE_LEVEL = 9;
+/** Какво има в скалата: тегло на шанса на първия етаж и колко расте с всеки следващ. */
+export const MINE_LOOT: { id: string; w: number; dw: number }[] = [
+  { id: '', w: 40, dw: -2 },
+  { id: 'ore_lead', w: 18, dw: 0 },
+  { id: 'ore_zinc', w: 16, dw: 0 },
+  { id: 'ore_silver', w: 9, dw: 0.8 },
+  { id: 'quartz', w: 7, dw: 0.4 },
+  { id: 'fluorite', w: 4, dw: 0.4 },
+  { id: 'ore_gold', w: 2.5, dw: 0.5 },
+  { id: 'amethyst', w: 1.5, dw: 0.3 },
 ];
 
 // ястия от риба (в Рибарницата)
@@ -417,6 +449,25 @@ b({ id: 'perfume', name: 'Парфюмерия', desc: 'Розов парфюм,
   { out: 'giftbasket', qty: 1, needs: { jam: 1, honey: 1, tea: 1, goatsoap: 1 }, time: 7200 },
 ] });
 
+b({ id: 'smelter', name: 'Топилня', desc: 'Топи рудата от рудника на кюлчета. От цинка и оловото прави и пирони, винтове, болтове и ламарина.', model: 'pb_smelter', size: 6.5, foot: [6, 6], level: 10, price: 3800, kind: 'production', slots: 2, unique: true, recipes: [
+  { out: 'bar_lead', qty: 1, needs: { ore_lead: 3 }, time: 1200 },
+  { out: 'bar_zinc', qty: 1, needs: { ore_zinc: 3 }, time: 1200 },
+  { out: 'nail', qty: 3, needs: { bar_zinc: 1 }, time: 900 },
+  { out: 'screw', qty: 3, needs: { bar_lead: 1 }, time: 900 },
+  { out: 'panel', qty: 2, needs: { bar_zinc: 2 }, time: 1500 },
+  { out: 'bolt', qty: 2, needs: { bar_lead: 1, bar_zinc: 1 }, time: 1500 },
+  { out: 'bar_silver', qty: 1, needs: { ore_silver: 3 }, time: 2400 },
+  { out: 'bar_gold', qty: 1, needs: { ore_gold: 3 }, time: 3600 },
+] });
+
+b({ id: 'jeweler', name: 'Филигранна работилница', desc: 'Родопски филигран: сребърни гривни, пафти, обеци и пръстени с кристали от рудника.', model: 'pb_jeweler', size: 6, foot: [6, 6], level: 12, price: 9500, kind: 'production', slots: 2, unique: true, recipes: [
+  { out: 'bracelet', qty: 1, needs: { bar_silver: 1 }, time: 2400 },
+  { out: 'earrings', qty: 1, needs: { bar_silver: 1, fluorite: 2 }, time: 3600 },
+  { out: 'pafti', qty: 1, needs: { bar_silver: 2, quartz: 1 }, time: 4800 },
+  { out: 'ring', qty: 1, needs: { bar_gold: 1, amethyst: 1 }, time: 5400 },
+  { out: 'necklace', qty: 1, needs: { bar_gold: 1, quartz: 2, fluorite: 1, amethyst: 1 }, time: 7200 },
+] });
+
 b({ id: 'smokehouse', name: 'Рибарница', desc: 'Пържени рибки, пушен шаран и рибни специалитети от уловеното в езерото.', model: 'pb_smokehouse', size: 6.5, foot: [6, 6], level: 7, price: 1600, kind: 'production', slots: 2, unique: true, recipes: [
   { out: 'friedfish', qty: 1, needs: { f_crucian: 3, corn: 1 }, time: 900 },
   { out: 'smokedcarp', qty: 1, needs: { f_carp: 2 }, time: 1800 },
@@ -664,6 +715,7 @@ export const ACHIEVEMENTS: AchDef[] = [
   { id: 'cars', name: 'Шофьор', desc: 'Купи {n} коли', icon: 'car:pickup', tiers: [1, 3, 6, 10, 14], reward: [3, 6, 12, 30, 50] },
   { id: 'level', name: 'Опитен фермер', desc: 'Стигни ниво {n}', icon: 'star', tiers: [5, 10, 15, 20, 30, 40, 50], reward: [5, 10, 15, 25, 40, 60, 100] },
   { id: 'helps', name: 'Добър приятел', desc: 'Помогни на приятели {n} пъти', icon: 'heart', tiers: [5, 25, 100, 400], reward: [3, 6, 12, 25] },
+  { id: 'mined', name: 'Миньор', desc: 'Изкопай {n} пъти в рудника', icon: 'pickaxe', tiers: [10, 60, 250, 800], reward: [3, 6, 12, 25] },
   { id: 'fish', name: 'Рибар', desc: 'Хвани {n} риби', icon: 'f_carp', tiers: [5, 30, 100, 300, 1000], reward: [3, 6, 12, 25, 40] },
   { id: 'cleared', name: 'Дървосекач', desc: 'Разчисти {n} препятствия', icon: 'axe', tiers: [3, 15, 50, 150], reward: [2, 5, 10, 20] },
   { id: 'trains', name: 'Железничар', desc: 'Напълни {n} товарни влака', icon: 'b:board', tiers: [1, 5, 20, 60], reward: [3, 8, 15, 30] },
