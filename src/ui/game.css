@@ -413,3 +413,9 @@ body.photo #ui, body.photo #markers, body.photo #hud-side { display: none !impor
 .holiday .need { margin: 2px; }
 .places .card .ic { width: 70px; height: 70px; }
 @media (max-width: 560px) { .ph-pill { display: none !important; } }
+.albumgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; margin-bottom: 6px; }
+.albumgrid .ai { background: #fffdf6; border: 2px solid #ecd3a3; border-radius: 10px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+.albumgrid .ai img { width: 88%; height: 88%; }
+.albumgrid .ai.no { background: #e9dcc0; }
+.albumgrid .ai.no img { filter: brightness(0) opacity(.28); }
+.sec.row { display: flex; align-items: center; }

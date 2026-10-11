@@ -107,3 +107,26 @@ const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAA
 export function img(id: string, cls = 'ic') {
   return `<img class="${cls}" data-icon="${id}" src="${icon(id) || BLANK}" alt="" draggable="false">`;
 }
+
+/** Като img(), но иконката се рисува по-късно (по няколко на кадър) — за дълги списъци. */
+export function imgLazy(id: string, cls = 'ic') {
+  const c = cache.get(id);
+  return `<img class="${cls}" data-icon="${id}" ${c ? '' : 'data-lazy="1"'} src="${c || BLANK}" alt="" draggable="false">`;
+}
+let lazyOn = false;
+export function fillLazy() {
+  if (lazyOn) return;
+  lazyOn = true;
+  const step = () => {
+    const els = document.querySelectorAll<HTMLImageElement>('img[data-lazy]');
+    const t0 = performance.now();
+    for (const el of els) {
+      if (performance.now() - t0 > 12) break;
+      el.removeAttribute('data-lazy');
+      el.src = icon(el.dataset.icon!) || BLANK;
+    }
+    if (document.querySelector('img[data-lazy]')) requestAnimationFrame(step);
+    else lazyOn = false;
+  };
+  requestAnimationFrame(step);
+}

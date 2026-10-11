@@ -63,6 +63,8 @@ export interface Save {
   fishDone?: boolean; // взета ли е наградата за целия дневник
   news?: number; // коя версия на „Ново в играта“ е видял
   holidays?: string[]; // взети празнични подаръци (напр. „newyear2027“)
+  seen?: Record<string, 1>; // колекция: кои стоки са имани поне веднъж
+  album?: string[]; // взети награди за пълни категории в колекцията
   daily?: DailyState; // задачи за деня
   login?: { day: string; n: number }; // подарък за всеки ден
   fair?: FairState; // седмичният събор
@@ -195,6 +197,7 @@ export const count = (id: string) => S.inv[id] || 0;
 export function addItem(id: string, n: number, force = false) {
   const room = force ? n : Math.max(0, Math.min(n, spaceFor(id)));
   if (room > 0) {
+    if (!(S.seen ??= {})[id]) { S.seen[id] = 1; emit('seen'); }
     S.inv[id] = count(id) + room;
     emit('inv');
     save();

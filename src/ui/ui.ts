@@ -1,5 +1,5 @@
 import { UI } from './api';
-import { icon, img } from './icons';
+import { icon, img, imgLazy, fillLazy } from './icons';
 import { S, on, save, spend, spendDiamonds, addCoins, addDiamonds, addXP, count, used, cap, isSiloItem, isToolItem, takeAll, addItem, now, skipCost, resetSave, emit, achValue, achReady } from '../game/state';
 import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMALS, TREES, MAX_ANIMALS, ACHIEVEMENTS, BARN_MATS, SILO_MATS, TOOL_SHOP, MAT_DIAMONDS, OBSTACLE_REWARD, xpForLevel, unlocksAt, type BuildingDef } from '../game/data';
 import { clearObstacle } from '../game/obstacles';
@@ -1119,9 +1119,45 @@ function confirmTwice() {
   return true;
 }
 
+/** Категориите в колекцията и наградата за всяка пълна. */
+const ALBUM: { id: string; name: string; kinds: string[]; dia: number; filter?: (id: string) => boolean }[] = [
+  { id: 'crop', name: '🌾 Реколта', kinds: ['crop'], dia: 10 },
+  { id: 'fruit', name: '🍎 Плодове', kinds: ['fruit'], dia: 6 },
+  { id: 'animal', name: '🥚 От животните', kinds: ['animal'], dia: 8 },
+  { id: 'food', name: '🍞 Храни и стоки', kinds: ['food'], dia: 25, filter: (id) => !id.startsWith('bar_') && !['bracelet', 'earrings', 'pafti', 'ring', 'necklace'].includes(id) },
+  { id: 'fish', name: '🐟 Риби', kinds: ['fish'], dia: 8 },
+  { id: 'mine', name: '💎 Рудник и бижута', kinds: ['ore', 'food'], dia: 12, filter: (id) => ITEMS[id].kind === 'ore' || id.startsWith('bar_') || ['bracelet', 'earrings', 'pafti', 'ring', 'necklace'].includes(id) },
+];
+function albumItems(c: (typeof ALBUM)[number]) {
+  return Object.values(ITEMS).filter((it) => c.kinds.includes(it.kind) && (!c.filter || c.filter(it.id))).sort((a, b) => a.level - b.level);
+}
+/** Стоките, които играчът вече има, влизат в колекцията (за старите ферми). */
+function albumSync() {
+  const seen = (S.seen ??= {});
+  for (const [k, n] of Object.entries(S.inv)) if (n > 0) seen[k] = 1;
+  if (S.fishLog) for (const k of Object.keys(S.fishLog)) seen[k] = 1;
+}
+
 function openProfile() {
+  albumSync();
   open(S.name, {
+    tabs: [{ id: 'ach', label: '🏆 Постижения' }, { id: 'album', label: '📖 Колекция' }],
+    tab: 'ach',
     render: () => {
+      if (current!.tab === 'album') {
+        let html = `<div class="panel-desc">Всичко, което някога си имал, влиза тук. Събери цяла категория и вземи диаманти!</div>`;
+        for (const c of ALBUM) {
+          const list = albumItems(c);
+          const got = list.filter((it) => S.seen?.[it.id]).length;
+          const done = got === list.length;
+          const claimed = S.album?.includes(c.id);
+          html += `<div class="sec row"><span>${c.name} — ${got}/${list.length}</span><span class="sp"></span>${claimed ? '✓' : `<button class="btn xs ${done ? 'gold' : 'gray'}" data-act="album" data-c="${c.id}">${img('diamond')} ${c.dia}</button>`}</div><div class="albumgrid">`;
+          html += list.map((it) => S.seen?.[it.id] ? `<div class="ai" title="${it.name}">${imgLazy(it.id, '')}</div>` : `<div class="ai no" title="?">${imgLazy(it.id, '')}</div>`).join('');
+          html += '</div>';
+        }
+        setTimeout(fillLazy, 0);
+        return html;
+      }
       let html = `<div class="center"><b style="font-size:20px">Ниво ${S.level}</b> · ${fmt(S.xp)} / ${fmt(xpForLevel(S.level))} опит</div>
       <div class="panel-desc">Постижения — вземи диамантите, когато изпълниш целта. С диаманти се ускорява всичко.</div><div class="orders">`;
       for (const a of ACHIEVEMENTS) {
@@ -1145,6 +1181,17 @@ function openProfile() {
       return html;
     },
     actions: {
+      album: (el) => {
+        const c = ALBUM.find((x) => x.id === el.dataset.c)!;
+        const list = albumItems(c);
+        if ((S.album ?? []).includes(c.id)) return;
+        if (!list.every((it) => S.seen?.[it.id])) { UI.toast(`Липсват още ${list.filter((it) => !S.seen?.[it.id]).length} неща в тази категория`, 'info'); return; }
+        (S.album ??= []).push(c.id);
+        addDiamonds(c.dia);
+        flyTo('diamond', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-diamonds', 6);
+        sfx('fanfare');
+        save();
+      },
       claim: (el) => {
         const a = ACHIEVEMENTS.find((x) => x.id === el.dataset.id)!;
         const got = S.ach[a.id] ?? 0;
