@@ -165,7 +165,63 @@ export function sparkle(at: THREE.Vector3, n = 14, colorIdx?: number) {
     fxScene.add(m);
   }
 }
+/** Парченца (трески, пръст, камъчета), които хвърчат и падат. */
+const chipGeo = new THREE.BoxGeometry(0.16, 0.1, 0.12);
+export function debris(at: THREE.Vector3, color: string, n = 12, power = 1) {
+  if (!fxScene) return;
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(chipGeo, new THREE.MeshStandardMaterial({ color: new THREE.Color(color).offsetHSL(0, 0, (Math.random() - 0.5) * 0.15), transparent: true, roughness: 0.9 }));
+    m.position.copy(at).add(new THREE.Vector3((Math.random() - 0.5) * 0.8, Math.random() * 0.6, (Math.random() - 0.5) * 0.8));
+    m.scale.setScalar(0.6 + Math.random() * 1.2);
+    const a = Math.random() * Math.PI * 2;
+    const sp = (1.5 + Math.random() * 3) * power;
+    sparks.push({ m, v: new THREE.Vector3(Math.cos(a) * sp, (3 + Math.random() * 4) * power, Math.sin(a) * sp), life: 0.9 + Math.random() * 0.6 });
+    fxScene.add(m);
+  }
+}
+
+/** Облаче прах/дим (за взрив и разчистване). */
+let puffTex: THREE.CanvasTexture | null = null;
+const puffs: { s: THREE.Sprite; v: THREE.Vector3; life: number; max: number; grow: number }[] = [];
+export function dust(at: THREE.Vector3, color = '#d8c8a8', n = 8, size = 1.5) {
+  if (!fxScene) return;
+  if (!puffTex) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 64;
+    const g = cv.getContext('2d')!;
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,1)');
+    gr.addColorStop(0.5, 'rgba(255,255,255,0.5)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 64, 64);
+    puffTex = new THREE.CanvasTexture(cv);
+  }
+  for (let i = 0; i < n; i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color, transparent: true, depthWrite: false, opacity: 0.8 }));
+    s.position.copy(at).add(new THREE.Vector3((Math.random() - 0.5) * size, Math.random() * size * 0.5, (Math.random() - 0.5) * size));
+    s.scale.setScalar(size);
+    const a = Math.random() * Math.PI * 2;
+    puffs.push({ s, v: new THREE.Vector3(Math.cos(a) * 1.5, 0.8 + Math.random() * 1.5, Math.sin(a) * 1.5), life: 0, max: 1.2 + Math.random() * 0.8, grow: size * 2.2 });
+    fxScene.add(s);
+  }
+}
+
 export function updateSparks(dt: number) {
+  for (let i = puffs.length - 1; i >= 0; i--) {
+    const p = puffs[i];
+    p.life += dt;
+    const k = p.life / p.max;
+    p.v.multiplyScalar(Math.pow(0.3, dt));
+    p.s.position.addScaledVector(p.v, dt);
+    p.s.scale.setScalar(p.grow * (0.5 + k));
+    (p.s.material as THREE.SpriteMaterial).opacity = 0.75 * (1 - k);
+    if (k >= 1) {
+      fxScene?.remove(p.s);
+      (p.s.material as THREE.Material).dispose();
+      puffs.splice(i, 1);
+    }
+  }
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
     s.life -= dt;

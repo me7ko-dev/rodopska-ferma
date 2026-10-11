@@ -48,12 +48,14 @@ export interface Save {
   tut: number;
   sound: boolean;
   music: boolean;
-  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number; helps?: number; traded?: number };
+  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number; helps?: number; traded?: number; found?: number; cleared?: number };
   ach: Record<string, number>;
   created: number;
   last: number;
   owner?: number; // чий профил е тази ферма (онлайн)
   cloudRev?: number; // последната версия, качена в облака
+  obsT?: number; // кога за последно е поникнало препятствие
+  luck?: number; // расте при всяка жътва без находка (за да не чакаш дълго)
 }
 
 type Listener = (what: string) => void;
@@ -96,7 +98,7 @@ export function freshSave(): Save {
     tut: 0,
     sound: true,
     music: true,
-    stats: { harvested: 0, produced: 0, orders: 0, earned: 0, visitors: 0, helps: 0, traded: 0 },
+    stats: { harvested: 0, produced: 0, orders: 0, earned: 0, visitors: 0, helps: 0, traded: 0, found: 0, cleared: 0 },
     ach: {},
     created: t,
     last: t,
@@ -161,15 +163,18 @@ export function resetSave() {
 
 // ---------- склад ----------
 export const isSiloItem = (id: string) => ITEMS[id]?.kind === 'crop' || ITEMS[id]?.kind === 'fruit';
+/** Материалите и инструментите стоят в сандъка — не заемат място в склада. */
+export const isToolItem = (id: string) => ITEMS[id]?.kind === 'tool';
 export function used(silo: boolean) {
   let n = 0;
-  for (const [k, v] of Object.entries(S.inv)) if (isSiloItem(k) === silo) n += v;
+  for (const [k, v] of Object.entries(S.inv)) if (!isToolItem(k) && isSiloItem(k) === silo) n += v;
   return n;
 }
 export function cap(silo: boolean) {
   return silo ? S.siloCap : S.barnCap;
 }
 export function spaceFor(id: string) {
+  if (isToolItem(id)) return 1e9;
   const silo = isSiloItem(id);
   return cap(silo) - used(silo);
 }

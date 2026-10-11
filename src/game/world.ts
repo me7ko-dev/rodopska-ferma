@@ -4,7 +4,9 @@ import { S, save, addItem, addXP, addCoins, spend, emit, now, spaceFor, isSiloIt
 import { instance, animationsOf, has, loadModel } from '../engine/assets';
 import { cropMesh, soilMesh } from './crops3d';
 import { fence, yard, trough, beehive, orderBoard, overgrowth, saleSign } from './props';
-import { flyTo, popText, marker, removeMarker, bounce, sparkle, type Marker } from './fx';
+import { flyTo, popText, marker, removeMarker, bounce, sparkle, debris, dust, type Marker } from './fx';
+import { rollDrop } from './loot';
+import { landObstacles } from './obstacles';
 import { icon } from '../ui/icons';
 import { UI } from '../ui/api';
 import { sfx } from '../audio/sfx';
@@ -190,6 +192,7 @@ export class Farm implements GameInput {
       case 'animal': v = new PenView(e, def, this); break;
       case 'tree': v = new TreeView(e, def, this); break;
       case 'pet': v = new PetView(e, def, this); break;
+      case 'obstacle': v = new ObstacleView(e, def, this); break;
       default: v = new BasicView(e, def, this);
     }
     // мека сянка отдолу (без нивите, заградите и малката украса)
@@ -261,6 +264,7 @@ export class Farm implements GameInput {
     const g = this.landGroups.get(id);
     if (g) sparkle(g.position.clone().setY(1), 30);
     this.buildLands();
+    landObstacles(this, l.rect);
     addXP(Math.round(l.price / 20));
     sfx('build');
     save();
@@ -305,7 +309,7 @@ export class Farm implements GameInput {
     }
     const v = this.pick(p.x, p.y);
     // задържане с пръст върху обект → местене (като в Hay Day)
-    if (v && !(this.tool?.kind === 'sow' && v.isEmpty?.()) && !v.isReady?.()) {
+    if (v && v.def.kind !== 'obstacle' && !(this.tool?.kind === 'sow' && v.isEmpty?.()) && !v.isReady?.()) {
       this.longTimer = window.setTimeout(async () => {
         if (this.rig.gestureMoved() || !this.rig.isPressing() || this.place) return;
         await this.beginPlace(v.e.type, undefined, v);
@@ -510,6 +514,23 @@ export function previewModel(def: BuildingDef) {
   return g;
 }
 
+/** Изсветлява материалите на модел (копира ги, за да не засегне другите). */
+const brightCache = new Map<THREE.Material, THREE.Material>();
+function recolorBright(root: THREE.Object3D, k: number) {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const src = m.material as THREE.MeshStandardMaterial;
+    let c = brightCache.get(src) as THREE.MeshStandardMaterial | undefined;
+    if (!c) {
+      c = src.clone();
+      c.color.multiplyScalar(k);
+      brightCache.set(src, c);
+    }
+    m.material = c;
+  });
+}
+
 function animalSound(kind: string) {
   return ({ cow: 'moo', buffalo: 'moo', sheep: 'baa', goat: 'baa', llama: 'baa', bee: 'buzz', duck: 'quack', pig: 'oink', fish: 'splash' } as const)[kind as 'cow'] ?? 'cluck';
 }
@@ -589,6 +610,7 @@ class FieldView implements View {
     flyTo('star', pos, '#hud-xp', 1, 120);
     addXP(xp);
     S.stats.harvested += n;
+    rollDrop('field', pos.clone().setY(1.6));
     this.e.crop = undefined;
     this.e.planted = this.e.ready = undefined;
     this.setVisual();
@@ -673,7 +695,7 @@ class ProductionView implements View {
       d.shift();
       got = true;
     }
-    if (got) { sfx('collect'); save(); }
+    if (got) { sfx('collect'); rollDrop('prod', this.root.position.clone().setY(this.height * 0.9)); save(); }
     return got;
   }
   tap() {
@@ -927,6 +949,7 @@ class PenView implements View {
       addXP(ITEMS[a.product].xp * n);
       flyTo('star', this.root.position.clone().setY(2), '#hud-xp', 1, 200);
       sfx('collect');
+      rollDrop('animal', this.root.position.clone().setY(2.4), Math.min(2, 0.6 + n * 0.2));
       save();
     } else if (this.e.animals!.some((_, i) => this.isAnimalReady(i))) {
       UI.toast('Хамбарът е пълен!', 'warn');
@@ -1131,6 +1154,7 @@ class TreeView implements View {
     flyTo('star', pos, '#hud-xp', 1, 120);
     this.e.ready = now() + this.info.time * 1000;
     sfx('harvest');
+    rollDrop('tree', pos.clone().setY(this.height * 0.8));
     save();
     return true;
   }
@@ -1248,6 +1272,86 @@ class PetView implements View {
   dispose() {}
 }
 
-export { FieldView, ProductionView, PenView, TreeView, BasicView, PetView };
+// =====================================================================
+// ПРЕПЯТСТВИЕ: храст, пън, дърво или камък — разчиства се с инструмент
+class ObstacleView implements View {
+  root = new THREE.Group();
+  proxy: THREE.Mesh;
+  height = 2;
+  model: THREE.Group;
+  private clearing = -1;
+  private hits = 0;
+  private onCleared: (() => void) | null = null;
+  constructor(public e: Entity, public def: BuildingDef, public farm: Farm) {
+    const tall = /o_(tree|pine|dead)/.test(def.id);
+    this.model = instance(def.model, def.size, tall ? 'y' : 'max');
+    this.model.rotation.y = (e.uid * 2.39996) % (Math.PI * 2);
+    if (/o_(bush|tree|pine)/.test(def.id)) windify(this.model, 4, 0.09, (mt) => /Leaves/i.test(mt.name));
+    // сухите дървета са много тъмни — изсветляваме кората до сиво-кафяво
+    if (/o_(dead|stump)/.test(def.id)) recolorBright(this.model, 2.4);
+    this.root.add(this.model);
+    this.height = (this.model.userData.size as THREE.Vector3)?.y ?? 2;
+    const [w, d] = def.foot;
+    this.proxy = makeProxy(this, w * 0.95, Math.max(1.2, Math.min(this.height, 4.5)), d * 0.95);
+    this.root.add(this.proxy);
+  }
+  tap() {
+    if (VISIT) { UI.visitTap(this); return; }
+    if (this.clearing >= 0) return;
+    UI.openObstacle(this);
+  }
+  /** Разчистване (инструментът вече е взет): няколко удара, после изчезва. */
+  startClear(done: () => void) {
+    this.clearing = 0;
+    this.hits = 0;
+    this.onCleared = done;
+    if (this.def.tool === 'dynamite') sfx('tick');
+  }
+  private hit() {
+    const p = this.root.position.clone().setY(Math.min(this.height * 0.4, 1.5));
+    const tool = this.def.tool;
+    const wood = /o_(tree|pine|dead|stump)/.test(this.def.id);
+    if (tool === 'dynamite') return;
+    sfx(tool === 'saw' ? 'saw' : tool === 'shovel' ? 'dig' : 'chop');
+    debris(p, tool === 'shovel' ? '#7a5a3a' : wood ? '#c9935a' : '#6fa04a', 6);
+    bounce(this.model);
+  }
+  update(_t: number, dt: number) {
+    if (this.clearing < 0) return;
+    this.clearing += dt;
+    const k = this.clearing;
+    const boom = this.def.tool === 'dynamite';
+    const hitsDue = boom ? 0 : Math.min(3, Math.floor(k / 0.32) + 1);
+    while (this.hits < hitsDue) { this.hits++; this.hit(); }
+    if (boom) {
+      // фитилът съска, камъкът трепери… и бум
+      this.model.position.x = Math.sin(k * 60) * 0.04 * Math.min(1, k * 2);
+      if (k > 0.9 && this.hits === 0) {
+        this.hits = 1;
+        sfx('boom');
+        const p = this.root.position.clone().setY(1);
+        dust(p, '#cfc6b8', 12, 2.6);
+        debris(p, '#8a8478', 22, 1.6);
+        sparkle(p, 16, 3);
+        this.model.visible = false;
+        if (navigator.vibrate) navigator.vibrate(60);
+      }
+    } else if (k > 1.0) {
+      // пада/потъва и се смалява
+      const s = Math.max(0, 1 - (k - 1.0) / 0.45);
+      this.model.scale.setScalar(s);
+      this.model.rotation.z = (1 - s) * (/o_(tree|pine|dead)/.test(this.def.id) ? 1.3 : 0);
+      if (s < 1 && this.hits === 3) { this.hits = 4; dust(this.root.position.clone().setY(0.6), '#d8c8a8', 6, 1.6); }
+    }
+    if (k > (boom ? 1.5 : 1.5) && this.onCleared) {
+      const f = this.onCleared;
+      this.onCleared = null;
+      f();
+    }
+  }
+  dispose() {}
+}
+
+export { FieldView, ProductionView, PenView, TreeView, BasicView, PetView, ObstacleView };
 export const ensureModels = async (names: string[]) => { await Promise.all(names.filter((n) => n && !has(n)).map((n) => loadModel(n))); };
 export { emit };

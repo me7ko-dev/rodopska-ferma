@@ -1,7 +1,7 @@
 // Всичко в играта: стоки, култури, животни, сгради, рецепти, коли, къщи, нива.
 // Времената са в секунди.
 
-export type ItemKind = 'crop' | 'animal' | 'feed' | 'food' | 'fruit';
+export type ItemKind = 'crop' | 'animal' | 'feed' | 'food' | 'fruit' | 'tool' | 'fish' | 'ore';
 
 export interface ItemDef {
   id: string;
@@ -102,6 +102,35 @@ item('truffle', 'Трюфели', 'animal', 85, 9, 22);
 item('buffmilk', 'Биволско мляко', 'animal', 62, 8, 26);
 item('llamawool', 'Вълна от лама', 'animal', 90, 10, 31);
 item('trout', 'Пъстърва', 'animal', 95, 11, 36);
+
+// --- материали и инструменти (намират се при жътва; пазят се в сандъка, без да заемат място в склада) ---
+item('bolt', 'Болтове', 'tool', 40, 0, 1);
+item('plank', 'Дъски', 'tool', 40, 0, 1);
+item('tape', 'Тиксо', 'tool', 40, 0, 1);
+item('nail', 'Пирони', 'tool', 40, 0, 1);
+item('screw', 'Винтове', 'tool', 40, 0, 1);
+item('panel', 'Ламарина', 'tool', 40, 0, 1);
+item('axe', 'Брадва', 'tool', 20, 0, 1);
+item('saw', 'Трион', 'tool', 40, 0, 1);
+item('shovel', 'Лопата', 'tool', 25, 0, 1);
+item('dynamite', 'Динамит', 'tool', 70, 0, 1);
+item('pickaxe', 'Кирка', 'tool', 45, 0, 9);
+item('bait', 'Стръв', 'tool', 5, 0, 6);
+
+/** Материали за по-голям хамбар и силоз. */
+export const BARN_MATS = ['bolt', 'plank', 'tape'];
+export const SILO_MATS = ['nail', 'screw', 'panel'];
+/** Инструменти, които се купуват и в магазина (цена в монети). */
+export const TOOL_SHOP: { id: string; price: number; qty: number }[] = [
+  { id: 'axe', price: 45, qty: 1 },
+  { id: 'shovel', price: 55, qty: 1 },
+  { id: 'saw', price: 95, qty: 1 },
+  { id: 'dynamite', price: 170, qty: 1 },
+  { id: 'pickaxe', price: 110, qty: 1 },
+  { id: 'bait', price: 30, qty: 5 },
+];
+/** Колко диаманта струва един липсващ материал. */
+export const MAT_DIAMONDS = 6;
 
 // --- фураж ---
 item('feed_chicken', 'Храна за кокошки', 'feed', 4, 1, 1);
@@ -204,8 +233,10 @@ export interface BuildingDef {
   price: number;
   slots?: number; // колко неща може да се правят на опашка
   recipes?: Recipe[];
-  kind: 'production' | 'storage' | 'animal' | 'special' | 'deco' | 'tree' | 'field' | 'pet';
+  kind: 'production' | 'storage' | 'animal' | 'special' | 'deco' | 'tree' | 'field' | 'pet' | 'obstacle';
   animal?: string;
+  /** препятствие: с какъв инструмент се разчиства */
+  tool?: string;
   unique?: boolean;
   tint?: string; // пребоядисване на покрива/стените
 }
@@ -225,6 +256,7 @@ b({ id: 'feedmill', name: 'Фуражна мелница', desc: 'Прави х�
   { out: 'feed_buffalo', qty: 3, needs: { corn: 2, cabbage: 1, wheat: 2 }, time: 900 },
   { out: 'feed_llama', qty: 3, needs: { carrot: 2, wheat: 2, beet: 1 }, time: 960 },
   { out: 'feed_fish', qty: 3, needs: { wheat: 2, corn: 2, carrot: 1 }, time: 1080 },
+  { out: 'bait', qty: 5, needs: { wheat: 1, corn: 1 }, time: 90 },
 ] });
 
 b({ id: 'bakery', name: 'Пекарна', desc: 'Хляб, баница и питки.', model: 'house_med1', size: 7.5, foot: [6, 6], level: 2, price: 120, kind: 'production', slots: 2, unique: true, recipes: [
@@ -442,6 +474,21 @@ pet('pet_goose', 'Гъска', 'goose', 1.3, 16, 1500, 'Важна гъска, �
 pet('pet_deer', 'Сърна', 'deer', 2.2, 28, 6000, 'Кротка сърна от родопските гори.');
 pet('pet_stag', 'Елен', 'stag', 3, 38, 12000, 'Величествен елен с големи рога.');
 pet('pet_fox', 'Лисица', 'fox', 1.6, 44, 15000, 'Хитра, но добра лисица.');
+
+// препятствия — растат сами из фермата; разчистват се с инструмент и дават опит, монети и изненади
+const obstacle = (id: string, name: string, model: string, size: number, foot: [number, number], tool: string, desc: string) =>
+  b({ id, name, desc, model, size, foot, level: 1, price: 0, kind: 'obstacle', tool });
+obstacle('o_bush', 'Храсталак', 'n_plant_big1', 2.2, [2, 2], 'axe', 'Гъст храсталак. Изсечи го с брадва.');
+obstacle('o_dead', 'Сухо дърво', 'n_dead_tree1', 3.2, [2, 2], 'axe', 'Изсъхнало дърво. Отсечи го с брадва.');
+obstacle('o_stump', 'Стар пън', 'n_dead_tree2', 2.2, [2, 2], 'saw', 'Голям стар пън. Трябва ти трион.');
+obstacle('o_tree', 'Диво дърво', 'n_tree2', 5.5, [3, 3], 'saw', 'Голямо диво дърво. Отрежи го с трион.');
+obstacle('o_pine', 'Див бор', 'n_pine2', 6.5, [3, 3], 'saw', 'Висок бор, поникнал сам. Отрежи го с трион.');
+obstacle('o_rock', 'Камък', 'n_rock2', 1.6, [2, 2], 'shovel', 'Камък в земята. Изрови го с лопата.');
+obstacle('o_boulder', 'Голям камък', 'n_rock1', 3.4, [3, 3], 'dynamite', 'Огромен родопски камък. Само динамит ще го махне!');
+/** Награда за разчистване: [монети, опит]. */
+export const OBSTACLE_REWARD: Record<string, [number, number]> = {
+  o_bush: [12, 4], o_dead: [18, 6], o_stump: [30, 9], o_tree: [45, 14], o_pine: [45, 14], o_rock: [22, 7], o_boulder: [80, 25],
+};
 
 // --- коли ---
 export interface CarDef {

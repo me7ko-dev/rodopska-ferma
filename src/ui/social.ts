@@ -229,7 +229,7 @@ export function marketRender(tab: string) {
   for (let i = mine.rows.length; i < mine.max; i++) html += `<div class="slot">празно</div>`;
   html += '</div>';
   if (mine.rows.length < mine.max) {
-    const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].kind !== 'feed').sort((a, b) => ITEMS[a[0]].level - ITEMS[b[0]].level);
+    const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ['crop', 'fruit', 'animal', 'food'].includes(ITEMS[k].kind)).sort((a, b) => ITEMS[a[0]].level - ITEMS[b[0]].level);
     html += `<div class="sec">Какво да продадеш?</div><div class="inv">${items.map(([k, n]) => `<div class="invi ${sellSel === k ? 'sel' : ''}" data-act="msel" data-k="${k}">${img(k, '')}<b class="outl">${n}</b></div>`).join('') || '<div class="empty">Складът е празен.</div>'}</div>`;
     if (sellSel && count(sellSel) > 0) {
       sellQty = Math.max(1, Math.min(sellQty, count(sellSel), 10));

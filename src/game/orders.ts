@@ -26,8 +26,8 @@ export function makeable(): string[] {
     changed = false;
     for (const r of recipes) if (!out.has(r.out) && Object.keys(r.needs).every((n) => out.has(n))) { out.add(r.out); changed = true; }
   }
-  // фуражите не се поръчват
-  return [...out].filter((id) => ITEMS[id].kind !== 'feed');
+  // фуражите и инструментите не се поръчват
+  return [...out].filter((id) => ITEMS[id].kind !== 'feed' && ITEMS[id].kind !== 'tool');
 }
 
 export function newOrder(): Order {

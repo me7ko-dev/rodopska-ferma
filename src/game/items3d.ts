@@ -1213,6 +1213,195 @@ const builders: Record<string, () => THREE.Object3D> = {
     return g;
   },
 
+  // ---- материали и инструменти ----
+  bolt() {
+    const g = new THREE.Group();
+    const steel = mat('#b8c0c8', 0.3, { metalness: 0.75 });
+    const one = (x: number, z: number, ry: number) => {
+      const b = new THREE.Group();
+      b.add(mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.16, 6), steel, [0, 0.08, 0]));
+      b.add(mesh(G.cyl, steel, [0, 0.62, 0], [0.11, 0.95, 0.11]));
+      for (let i = 0; i < 9; i++) b.add(mesh(G.torus, steel, [0, 0.28 + i * 0.1, 0], [0.11, 0.11, 0.18], [Math.PI / 2, 0, 0]));
+      b.position.set(x, 0, z);
+      b.rotation.set(0, ry, 0);
+      return b;
+    };
+    const a = one(-0.2, 0, 0);
+    a.rotation.z = 0.35;
+    const c = one(0.3, 0.1, 0.5);
+    c.rotation.z = -0.25;
+    g.add(a, c);
+    g.add(mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.14, 6), steel, [0.05, 0.08, 0.45]));
+    g.add(mesh(G.cyl, mat('#5b636b', 0.5), [0.05, 0.08, 0.45], [0.09, 0.16, 0.09]));
+    return g;
+  },
+  plank() {
+    const g = new THREE.Group();
+    const r = rng(41);
+    for (let i = 0; i < 3; i++) {
+      const c = ['#c9935a', '#b98246', '#d6a46a'][i];
+      const p = mesh(roundedBox(1.7, 0.16, 0.42, 0.04), mat(c, 0.85), [0, i * 0.17, (i - 1) * 0.12], 1, [0, (i - 1) * 0.18, 0]);
+      g.add(p);
+      for (let k = 0; k < 3; k++) g.add(mesh(G.box, mat('#8a5a2b', 0.9), [(r() - 0.5) * 1.2, i * 0.17 + 0.165, (i - 1) * 0.12 + (r() - 0.5) * 0.2], [0.25 + r() * 0.3, 0.005, 0.02], [0, (i - 1) * 0.18, 0]));
+    }
+    return g;
+  },
+  tape() {
+    const g = new THREE.Group();
+    g.add(mesh(lathe([[0.3, 0], [0.62, 0], [0.62, 0.42], [0.3, 0.42]], 32), mat('#aeb4b8', 0.45, { metalness: 0.4, side: THREE.DoubleSide })));
+    g.add(mesh(lathe([[0.24, 0], [0.3, 0], [0.3, 0.42], [0.24, 0.42]], 24), mat('#c9a46b', 0.9, { side: THREE.DoubleSide })));
+    g.add(mesh(G.box, mat('#aeb4b8', 0.45, { metalness: 0.4 }), [0.66, 0.21, 0.25], [0.06, 0.4, 0.5], [0, 0.3, 0]));
+    g.rotation.set(1.15, 0, 0.2);
+    return g;
+  },
+  nail() {
+    const g = new THREE.Group();
+    const steel = mat('#c4ccd4', 0.3, { metalness: 0.75 });
+    for (let i = 0; i < 4; i++) {
+      const n = new THREE.Group();
+      n.add(mesh(G.cyl, steel, [0, 0.55, 0], [0.075, 1.1, 0.075]));
+      n.add(mesh(G.cyl, steel, [0, 1.12, 0], [0.22, 0.07, 0.22]));
+      n.add(mesh(G.cone, steel, [0, -0.08, 0], [0.075, 0.18, 0.075], [Math.PI, 0, 0]));
+      n.position.set((i - 1.5) * 0.3, (i % 2) * 0.12, (i % 2) * 0.2);
+      n.rotation.z = Math.PI / 2 + (i - 1.5) * 0.25;
+      g.add(n);
+    }
+    return g;
+  },
+  screw() {
+    const g = new THREE.Group();
+    const brass = mat('#e2b84a', 0.3, { metalness: 0.7 });
+    for (let k = 0; k < 2; k++) {
+      const s = new THREE.Group();
+      s.add(mesh(G.cyl, brass, [0, 1.0, 0], [0.24, 0.12, 0.24]));
+      s.add(mesh(G.box, mat('#8a6a20', 0.5), [0, 1.07, 0], [0.34, 0.03, 0.05]));
+      s.add(mesh(G.box, mat('#8a6a20', 0.5), [0, 1.07, 0], [0.05, 0.03, 0.34]));
+      s.add(mesh(G.cone, brass, [0, 0.45, 0], [0.12, 1.0, 0.12], [Math.PI, 0, 0]));
+      for (let i = 0; i < 7; i++) s.add(mesh(G.torus, brass, [0, 0.25 + i * 0.1, 0], [0.12 - i * -0.002 - (6 - i) * 0.008, 0.12 - (6 - i) * 0.008, 0.25], [Math.PI / 2 + 0.15, 0, 0]));
+      s.position.set(k ? 0.28 : -0.22, 0, k ? 0.1 : 0);
+      s.rotation.z = k ? -0.3 : 0.25;
+      g.add(s);
+    }
+    return g;
+  },
+  panel() {
+    const g = new THREE.Group();
+    const s = new THREE.Shape();
+    const W = 1.5, n = 6;
+    s.moveTo(-W / 2, 0);
+    for (let i = 0; i <= n * 8; i++) {
+      const x = -W / 2 + (i / (n * 8)) * W;
+      s.lineTo(x, Math.sin((i / 8) * Math.PI * 2) * 0.06 + 0.06);
+    }
+    for (let i = n * 8; i >= 0; i--) {
+      const x = -W / 2 + (i / (n * 8)) * W;
+      s.lineTo(x, Math.sin((i / 8) * Math.PI * 2) * 0.06 + 0.03);
+    }
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 1.0, bevelEnabled: false });
+    geo.translate(0, 0, -0.5);
+    const m = mat('#9fb4c4', 0.35, { metalness: 0.6, side: THREE.DoubleSide });
+    g.add(mesh(geo, m, [0, 0, 0], 1, [0.25, 0.3, 0]));
+    g.add(mesh(geo, mat('#b9cad6', 0.35, { metalness: 0.6, side: THREE.DoubleSide }), [0.05, 0.16, 0.05], 1, [0.25, 0.1, 0]));
+    return g;
+  },
+  axe() {
+    const g = new THREE.Group();
+    g.add(mesh(G.cyl, mat('#a8743e', 0.75), [0, 0.7, 0], [0.07, 1.5, 0.07]));
+    const s = new THREE.Shape();
+    s.moveTo(0, -0.18);
+    s.lineTo(0.18, -0.15);
+    s.quadraticCurveTo(0.55, -0.35, 0.62, -0.42);
+    s.quadraticCurveTo(0.72, 0.0, 0.62, 0.42);
+    s.quadraticCurveTo(0.55, 0.3, 0.18, 0.15);
+    s.lineTo(0, 0.18);
+    s.lineTo(-0.2, 0.12);
+    s.lineTo(-0.2, -0.12);
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.1, bevelEnabled: true, bevelSize: 0.02, bevelThickness: 0.02, bevelSegments: 2 });
+    geo.translate(0, 0, -0.05);
+    g.add(mesh(geo, mat('#9aa4ac', 0.3, { metalness: 0.7 }), [0, 1.3, 0]));
+    g.add(mesh(G.box, mat('#d8e0e6', 0.2, { metalness: 0.8 }), [0.66, 1.3, 0], [0.04, 0.8, 0.11], [0, 0, 0]));
+    g.rotation.z = -0.5;
+    return g;
+  },
+  saw() {
+    const g = new THREE.Group();
+    const s = new THREE.Shape();
+    s.moveTo(0, 0);
+    const L = 1.6, n = 16;
+    for (let i = 0; i <= n; i++) {
+      const x = (i / n) * L;
+      s.lineTo(x, (i % 2 ? -0.07 : 0) - x * 0.06);
+    }
+    s.lineTo(L, 0.12);
+    s.lineTo(0, 0.42);
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.02, bevelEnabled: false });
+    g.add(mesh(geo, mat('#c2cad0', 0.25, { metalness: 0.75, side: THREE.DoubleSide }), [-0.55, 0.3, 0]));
+    const h = new THREE.Shape();
+    h.moveTo(0, 0);
+    h.lineTo(0.5, 0);
+    h.quadraticCurveTo(0.6, 0.3, 0.5, 0.6);
+    h.lineTo(0.05, 0.6);
+    h.quadraticCurveTo(-0.08, 0.3, 0, 0);
+    const hole = new THREE.Path();
+    hole.moveTo(0.14, 0.18);
+    hole.lineTo(0.4, 0.18);
+    hole.lineTo(0.38, 0.42);
+    hole.lineTo(0.16, 0.42);
+    h.holes.push(hole);
+    const hg = new THREE.ExtrudeGeometry(h, { depth: 0.12, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2 });
+    hg.translate(0, 0, -0.05);
+    g.add(mesh(hg, mat('#b5532d', 0.6), [-1.0, 0.2, 0]));
+    g.rotation.z = 0.35;
+    return g;
+  },
+  shovel() {
+    const g = new THREE.Group();
+    g.add(mesh(G.cyl, mat('#a8743e', 0.75), [0, 1.0, 0], [0.06, 1.4, 0.06]));
+    g.add(mesh(G.torus, mat('#5a3a20', 0.7), [0, 1.82, 0], [0.18, 0.12, 0.5], [0, 0, 0]));
+    const b = lathe([[0, 0], [0.12, 0.05], [0.3, 0.25], [0.32, 0.55], [0.08, 0.6], [0, 0.6]], 24);
+    const blade = mesh(b, mat('#8f9aa2', 0.3, { metalness: 0.7, side: THREE.DoubleSide }), [0, -0.05, 0], [1, 1, 0.18]);
+    g.add(blade);
+    g.add(mesh(G.cyl, mat('#6d777e', 0.4, { metalness: 0.6 }), [0, 0.6, 0], [0.08, 0.15, 0.08]));
+    g.rotation.z = -0.55;
+    return g;
+  },
+  dynamite() {
+    const g = new THREE.Group();
+    const red = mat('#d8352a', 0.55);
+    for (const [x, z] of [[-0.2, 0], [0.2, 0], [0, 0.3], [0, -0.05]] as const) g.add(mesh(G.cyl, red, [x, 0.6, z + (x ? 0 : 0.02)], [0.18, 1.15, 0.18]));
+    for (const y of [0.3, 0.9]) g.add(mesh(G.cyl, mat('#3a3a3a', 0.7), [0, y, 0.1], [0.42, 0.1, 0.36]));
+    const fuse = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 1.15, 0.1), new THREE.Vector3(0.1, 1.4, 0.05), new THREE.Vector3(0.3, 1.5, 0), new THREE.Vector3(0.45, 1.42, 0)]);
+    g.add(mesh(new THREE.TubeGeometry(fuse, 12, 0.025, 6), mat('#e8d6a0', 0.8)));
+    g.add(mesh(G.sphere, mat('#ffcf3a', 0.3, { emissive: '#ff9a1e', emissiveIntensity: 1.5 }), [0.47, 1.43, 0], 0.07));
+    return g;
+  },
+  pickaxe() {
+    const g = new THREE.Group();
+    g.add(mesh(G.cyl, mat('#a8743e', 0.75), [0, 0.65, 0], [0.07, 1.4, 0.07]));
+    const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-0.75, 1.15, 0), new THREE.Vector3(0, 1.55, 0), new THREE.Vector3(0.75, 1.15, 0));
+    g.add(mesh(new THREE.TubeGeometry(curve, 16, 0.08, 8), mat('#8f9aa2', 0.3, { metalness: 0.7 })));
+    g.add(mesh(G.cone, mat('#8f9aa2', 0.3, { metalness: 0.7 }), [-0.8, 1.1, 0], [0.08, 0.2, 0.08], [0, 0, Math.PI * 0.62]));
+    g.add(mesh(G.cone, mat('#8f9aa2', 0.3, { metalness: 0.7 }), [0.8, 1.1, 0], [0.08, 0.2, 0.08], [0, 0, -Math.PI * 0.62]));
+    g.add(mesh(G.box, mat('#6d777e', 0.4, { metalness: 0.6 }), [0, 1.35, 0], [0.2, 0.22, 0.2]));
+    g.rotation.z = 0.35;
+    return g;
+  },
+  bait() {
+    const g = new THREE.Group();
+    g.add(mesh(lathe([[0, 0], [0.5, 0], [0.5, 0.55], [0.47, 0.57], [0, 0.57]], 28), mat('#6e8a3a', 0.6, { metalness: 0.2 })));
+    g.add(mesh(G.cyl, mat('#4a3020', 0.95), [0, 0.56, 0], [0.47, 0.04, 0.47]));
+    const pink = mat('#e88a96', 0.5);
+    const r = rng(9);
+    for (let i = 0; i < 4; i++) {
+      const pts: THREE.Vector3[] = [];
+      const a0 = r() * 6.28;
+      for (let k = 0; k < 6; k++) pts.push(new THREE.Vector3(Math.cos(a0 + k * 0.5) * (0.15 + k * 0.05), 0.6 + Math.sin(k * 1.3 + i) * 0.08 + (k > 3 ? 0.12 : 0), Math.sin(a0 + k * 0.5) * (0.15 + k * 0.05)));
+      g.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.045, 6), pink));
+    }
+    g.add(mesh(G.cyl, mat('#f2e2b0', 0.7), [0, 0.28, 0], [0.505, 0.26, 0.505]));
+    return g;
+  },
+
   // ---- общи иконки ----
   coin() {
     const g = new THREE.Group();

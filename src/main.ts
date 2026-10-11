@@ -24,6 +24,7 @@ import { Village } from './game/village';
 import { Vehicles } from './game/vehicles';
 import { People } from './game/npc';
 import { refillOrders } from './game/orders';
+import { tickObstacles } from './game/obstacles';
 import * as ordersMod from './game/orders';
 import * as dataMod from './game/data';
 import * as stateMod from './game/state';
@@ -43,7 +44,7 @@ const PRELOAD = [
   'n_pine4', 'n_pine2', 'n_pine3', 'n_tree1', 'n_tree5', 'tree_b', 'tree_d',
   'n_grass', 'n_grass_wispy2', 'n_grass_tall',
   'n_flower_group1', 'n_flower_group2', 'n_flower_single', 'n_petal_pink', 'n_petal_white', 'n_petal_purple', 'n_petal_yellow', 'n_petal_red',
-  'n_bush_flowers', 'n_fern', 'n_plant_big1', 'n_plant1', 'n_plant2', 'n_plant_big2', 'n_clover1', 'n_rock1', 'n_rock2', 'n_rock3',
+  'n_bush_flowers', 'n_fern', 'n_plant_big1', 'n_dead_tree1', 'n_dead_tree2', 'n_tree2', 'n_plant1', 'n_plant2', 'n_plant_big2', 'n_clover1', 'n_rock1', 'n_rock2', 'n_rock3',
   'lilypad', 'mallard', 'duck', 'm_farmer', 'hen', 'chicken', 'bee',
   'man1', 'man2', 'woman1', 'woman_dress', 'woman_casual', 'man_sleeves', 'woman_tank', 'm_worker', 'w_worker',
   'house_cottage', 'house_wood', 'barn_red', 'silo_house', 'windmill', 'coop', 'bench1', 'mailbox2', 'hay', 'barrel', 'well', 'market2', 'barn_open', 'sign',
@@ -159,7 +160,7 @@ async function boot() {
   if (!S.entities.length && !VISIT) newFarm(farm);
   else farm.load();
   farm.buildLands();
-  if (!VISIT) refillOrders();
+  if (!VISIT) { refillOrders(); tickObstacles(farm); }
   // дървена ограда около цялата ферма, с вход откъм пътя
   const fw = FARM.maxX - FARM.minX + 1.6, fd = FARM.maxZ - FARM.minZ + 1.6;
   const farmFence = fence(fw, fd, '#a0703f', DRIVE.w + 1.5, DRIVE.x - (FARM.minX + FARM.maxX) / 2);
@@ -232,8 +233,8 @@ async function boot() {
     updateSparks(dt);
     updateMarkers();
     engine.followShadow(rig.target, Math.min(90, rig.distance * 0.95));
-    // поръчките се попълват от само себе си
-    if (!VISIT && performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); }
+    // поръчките се попълват от само себе си; от време на време никне ново препятствие
+    if (!VISIT && performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); tickObstacles(farm); }
   });
   engine.start();
   // останалите модели (сгради за купуване, коли, къщи) — тихо във фонов режим

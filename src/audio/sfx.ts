@@ -59,7 +59,8 @@ function noise(dur: number, vol = 0.15, filter = 2000, when = 0, q = 1) {
   src.start(t);
 }
 
-export type Sfx = 'tap' | 'coin' | 'harvest' | 'plant' | 'levelup' | 'error' | 'pop' | 'build' | 'cluck' | 'moo' | 'baa' | 'buzz' | 'truck' | 'whistle' | 'open' | 'close' | 'collect' | 'quack' | 'oink' | 'splash' | 'heart';
+export type Sfx = 'tap' | 'coin' | 'harvest' | 'plant' | 'levelup' | 'error' | 'pop' | 'build' | 'cluck' | 'moo' | 'baa' | 'buzz' | 'truck' | 'whistle' | 'open' | 'close' | 'collect' | 'quack' | 'oink' | 'splash' | 'heart'
+  | 'find' | 'chop' | 'saw' | 'dig' | 'boom' | 'cast' | 'bite' | 'reel' | 'snap' | 'catch' | 'pick' | 'crystal' | 'fanfare' | 'tick';
 
 export function sfx(name: Sfx) {
   if (!S.sound) return;
@@ -92,6 +93,20 @@ export function sfx(name: Sfx) {
       case 'oink': for (let i = 0; i < 2; i++) { tone(260, 0.14, 'sawtooth', 0.06, i * 0.18, 0.8); noise(0.12, 0.1, 500, i * 0.18, 2); } break;
       case 'splash': noise(0.35, 0.22, 1400, 0, 0.6); noise(0.2, 0.12, 3000, 0.08, 0.8); break;
       case 'heart': [660, 880, 1100].forEach((f, i) => tone(f, 0.18, 'sine', 0.1, i * 0.08)); break;
+      case 'find': [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.22, 'triangle', 0.1, i * 0.07)); tone(2093, 0.4, 'sine', 0.05, 0.3); break;
+      case 'chop': noise(0.07, 0.4, 700, 0, 2); tone(160, 0.08, 'triangle', 0.15, 0, 0.6); break;
+      case 'saw': for (let i = 0; i < 4; i++) noise(0.12, 0.18, 2400 + (i % 2) * 900, i * 0.14, 4); break;
+      case 'dig': noise(0.16, 0.3, 380, 0, 1); noise(0.12, 0.2, 900, 0.12, 1.5); break;
+      case 'boom': noise(0.9, 0.6, 140, 0, 0.5); noise(0.5, 0.3, 600, 0.02, 0.7); tone(70, 0.8, 'sine', 0.3, 0, 0.4); break;
+      case 'cast': noise(0.25, 0.15, 3500, 0, 2); tone(900, 0.25, 'sine', 0.05, 0, 0.5); break;
+      case 'bite': noise(0.18, 0.25, 1600, 0, 0.8); tone(620, 0.08, 'square', 0.06, 0.02); tone(820, 0.1, 'square', 0.06, 0.12); break;
+      case 'reel': for (let i = 0; i < 3; i++) tone(1800 + i * 40, 0.025, 'square', 0.03, i * 0.035); break;
+      case 'snap': tone(1200, 0.06, 'square', 0.1, 0, 0.3); noise(0.2, 0.2, 2000, 0.03, 1); break;
+      case 'catch': noise(0.4, 0.25, 1300, 0, 0.6); [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.25, 'triangle', 0.12, 0.15 + i * 0.08)); break;
+      case 'pick': tone(1900, 0.05, 'square', 0.06); noise(0.1, 0.35, 2600, 0, 3); tone(260, 0.1, 'triangle', 0.1, 0.01, 0.6); break;
+      case 'crystal': [1568, 2093, 2637, 3136].forEach((f, i) => tone(f, 0.5, 'sine', 0.06, i * 0.05)); break;
+      case 'fanfare': [392, 523, 659, 784, 659, 784, 1046].forEach((f, i) => tone(f, i === 6 ? 0.6 : 0.16, 'triangle', 0.13, [0, 0.12, 0.24, 0.36, 0.52, 0.6, 0.72][i])); break;
+      case 'tick': tone(1400, 0.03, 'square', 0.04); break;
     }
   } catch {}
 }

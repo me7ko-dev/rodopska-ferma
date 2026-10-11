@@ -1,11 +1,12 @@
 import { UI } from './api';
 import { icon, img } from './icons';
-import { S, on, save, spend, spendDiamonds, addCoins, addDiamonds, addXP, count, used, cap, isSiloItem, takeAll, now, skipCost, resetSave, emit, achValue, achReady } from '../game/state';
-import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMALS, TREES, MAX_ANIMALS, ACHIEVEMENTS, xpForLevel, unlocksAt, type BuildingDef } from '../game/data';
+import { S, on, save, spend, spendDiamonds, addCoins, addDiamonds, addXP, count, used, cap, isSiloItem, isToolItem, takeAll, addItem, now, skipCost, resetSave, emit, achValue, achReady } from '../game/state';
+import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMALS, TREES, MAX_ANIMALS, ACHIEVEMENTS, BARN_MATS, SILO_MATS, TOOL_SHOP, MAT_DIAMONDS, OBSTACLE_REWARD, xpForLevel, unlocksAt, type BuildingDef } from '../game/data';
+import { clearObstacle } from '../game/obstacles';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
-import { sparkle, flyTo, toScreen } from '../game/fx';
+import { sparkle, flyTo, toScreen, bounce } from '../game/fx';
 import type { Farm, View } from '../game/world';
 import { centerOf, slotsOf, extraSlotCost, MAX_EXTRA_SLOTS } from '../game/world';
 import type { Village } from '../game/village';
@@ -355,13 +356,14 @@ function openStorage(silo: boolean) {
   let sel = '';
   let qty = 1;
   open('Склад', {
-    tabs: [{ id: 'silo', label: '🌾 Силоз (реколта)' }, { id: 'barn', label: '🏠 Хамбар (продукти)' }],
+    tabs: [{ id: 'silo', label: '🌾 Силоз' }, { id: 'barn', label: '🏠 Хамбар' }, { id: 'tools', label: '🧰 Сандък' }],
     tab: silo ? 'silo' : 'barn',
     onTab: () => { sel = ''; qty = 1; },
     render: () => {
+      if (current!.tab === 'tools') return toolsChest(sel);
       const isSilo = current!.tab === 'silo';
       const u = used(isSilo), c = cap(isSilo);
-      const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && isSiloItem(k) === isSilo).sort((a, b) => ITEMS[a[0]].level - ITEMS[b[0]].level);
+      const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && !isToolItem(k) && isSiloItem(k) === isSilo).sort((a, b) => ITEMS[a[0]].level - ITEMS[b[0]].level);
       let html = `<div class="capbar ${u >= c ? 'full' : ''}"><i style="width:${Math.min(100, (u / c) * 100)}%"></i><span class="outl">${u} / ${c}</span></div>`;
       if (!items.length) html += `<div class="empty">Празно е. ${isSilo ? 'Ожъни нивите!' : 'Събери продукти от животните и работилниците.'}</div>`;
       html += `<div class="inv">${items.map(([k, n]) => `<div class="invi ${sel === k ? 'sel' : ''}" data-act="sel" data-k="${k}" title="${ITEMS[k].name}">${img(k, '')}<b class="outl">${n}</b></div>`).join('')}</div>`;
@@ -372,8 +374,7 @@ function openStorage(silo: boolean) {
           <div class="qty"><button data-act="qm">−</button><span>${qty}</span><button data-act="qp">+</button><button data-act="qa" style="width:auto;padding:0 10px;border-radius:12px;font-size:14px">всички</button></div>
           <button class="btn gold" data-act="sell">Продай за ${img('coin')}${fmt(it.price * qty)}</button></div>`;
       }
-      const up = upgradeCost(isSilo);
-      html += `<div class="btns"><button class="btn blue" data-act="upgrade">Увеличи с 25 за ${img('coin')}${fmt(up)}</button></div>`;
+      html += upgradeBox(isSilo);
       return html;
     },
     actions: {
@@ -390,15 +391,35 @@ function openStorage(silo: boolean) {
         if (count(sel) <= 0) sel = '';
         qty = 1;
       },
-      upgrade: () => {
+      upgrade: (el) => {
         const isSilo = current!.tab === 'silo';
-        const up = upgradeCost(isSilo);
-        if (!spend(up)) { UI.toast('Нямаш достатъчно монети', 'warn'); sfx('error'); return; }
+        const u = storageUpgrade(isSilo);
+        const withMats = el.dataset.m === '1';
+        const coins = withMats ? u.coinsMats : u.coins;
+        const dia = withMats ? u.missing * MAT_DIAMONDS : 0;
+        if (S.coins < coins) { UI.toast('Нямаш достатъчно монети', 'warn'); sfx('error'); return; }
+        if (S.diamonds < dia) { UI.toast('Нямаш достатъчно диаманти за липсващите материали', 'warn'); sfx('error'); return; }
+        if (withMats) {
+          for (const m of u.mats) S.inv[m] = Math.max(0, count(m) - u.each);
+          for (const m of u.mats) if (!S.inv[m]) delete S.inv[m];
+          if (dia) spendDiamonds(dia);
+        }
+        spend(coins);
         if (isSilo) S.siloCap += 25; else S.barnCap += 25;
-        addXP(Math.round(up / 40));
+        addXP(Math.round(u.coins / 40));
         save();
         sfx('build');
-        UI.toast(isSilo ? 'Силозът е по-голям!' : 'Хамбарът е по-голям!', 'ok');
+        const sv = C.farm.byType(isSilo ? 'silo' : 'barn')[0];
+        if (sv) { sparkle(sv.root.position.clone().setY(sv.height), 30); bounce(sv.root); }
+        UI.toast(isSilo ? 'Силозът е по-голям! +25 места' : 'Хамбарът е по-голям! +25 места', 'ok');
+      },
+      sellt: () => {
+        if (!sel || count(sel) < 1) return;
+        takeAll({ [sel]: 1 });
+        addCoins(ITEMS[sel].price);
+        flyTo('coin', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-coins', 2);
+        sfx('coin');
+        if (count(sel) <= 0) sel = '';
       },
     },
   });
@@ -406,6 +427,36 @@ function openStorage(silo: boolean) {
 function upgradeCost(silo: boolean) {
   const n = ((silo ? S.siloCap : S.barnCap) - 50) / 25;
   return Math.round(150 * Math.pow(1.42, n) / 10) * 10;
+}
+/** Разширяване: или само с монети (скъпо), или с материали + малко монети (като в Hay Day). */
+function storageUpgrade(silo: boolean) {
+  const n = ((silo ? S.siloCap : S.barnCap) - 50) / 25;
+  const coins = upgradeCost(silo);
+  const each = 1 + Math.floor(n / 2);
+  const mats = silo ? SILO_MATS : BARN_MATS;
+  const missing = mats.reduce((a, m) => a + Math.max(0, each - count(m)), 0);
+  return { coins, coinsMats: Math.round(coins * 0.25 / 10) * 10, each, mats, missing };
+}
+function upgradeBox(silo: boolean) {
+  const u = storageUpgrade(silo);
+  return `<div class="upbox"><b>Още 25 места</b><div class="needs">${u.mats.map((m) => `<span class="need ${count(m) < u.each ? 'miss' : ''}" title="${ITEMS[m].name}">${img(m, '')}${count(m)}/${u.each}</span>`).join('')}</div>
+    <div class="btns" style="margin-top:6px"><button class="btn ${u.missing ? 'blue' : ''}" data-act="upgrade" data-m="1">${u.missing ? `${img('diamond')}${u.missing * MAT_DIAMONDS} + ` : ''}${img('coin')}${fmt(u.coinsMats)}</button>
+    <button class="btn gold sm" data-act="upgrade" data-m="0">Само с ${img('coin')}${fmt(u.coins)}</button></div>
+    <div class="sub">Материалите се намират при жътва, от животните и от влака.</div></div>`;
+}
+/** Сандъкът: материали и инструменти (не заемат място). */
+function toolsChest(sel: string) {
+  const tools = Object.entries(S.inv).filter(([k, n]) => n > 0 && isToolItem(k));
+  const all = [...BARN_MATS, ...SILO_MATS, ...TOOL_SHOP.map((t) => t.id)];
+  tools.sort((a, b) => all.indexOf(a[0]) - all.indexOf(b[0]));
+  let html = `<div class="panel-desc">Материалите и инструментите не заемат място в склада. Намираш ги при жътва, от животните и работилниците.</div>`;
+  if (!tools.length) html += `<div class="empty">Още е празно. Жъни и събирай — ще намериш нещо!</div>`;
+  html += `<div class="inv">${tools.map(([k, n]) => `<div class="invi ${sel === k ? 'sel' : ''}" data-act="sel" data-k="${k}" title="${ITEMS[k].name}">${img(k, '')}<b class="outl">${n}</b></div>`).join('')}</div>`;
+  if (sel && count(sel) > 0 && isToolItem(sel)) {
+    const use: Record<string, string> = { bolt: 'за хамбара', plank: 'за хамбара', tape: 'за хамбара', nail: 'за силоза', screw: 'за силоза', panel: 'за силоза', axe: 'сече храсти и сухи дървета', saw: 'реже пънове и дървета', shovel: 'изравя камъни', dynamite: 'взривява големи камъни; и в рудника', pickaxe: 'копае в рудника', bait: 'за риболов на езерото' };
+    html += `<div class="sellbox">${img(sel, 'ic-md')}<div><b>${ITEMS[sel].name}</b><div class="sub">${use[sel] ?? ''}</div></div><button class="btn gold sm" data-act="sellt">Продай 1 за ${img('coin')}${ITEMS[sel].price}</button></div>`;
+  }
+  return html;
 }
 
 // =====================================================================
@@ -469,12 +520,17 @@ function openShop() {
     { id: 'animal', label: '🐄 Животни' },
     { id: 'field', label: '🌾 Ниви и дървета' },
     { id: 'deco', label: '🌸 Украса' },
+    { id: 'tools', label: '🧰 Инструменти' },
   ];
   open('Магазин', {
     tabs,
     tab: 'build',
     render: () => {
       const tab = current!.tab;
+      if (tab === 'tools') return `<div class="panel-desc">С инструментите разчистваш храсти, дървета и камъни из фермата.</div><div class="grid">${TOOL_SHOP.map((t) => {
+        const lk = ITEMS[t.id].level > S.level;
+        return `<div class="card ${lk ? 'locked' : ''}" data-act="buytool" data-id="${t.id}">${lk ? `<div class="lock">Ниво ${ITEMS[t.id].level}</div>` : ''}<div class="own">${count(t.id)}</div>${img(t.id, 'ic')}<div class="nm">${ITEMS[t.id].name}${t.qty > 1 ? ' ×' + t.qty : ''}</div><div class="price">${img('coin')}${fmt(t.price)}</div></div>`;
+      }).join('')}</div>`;
       let list: BuildingDef[] = [];
       if (tab === 'build') list = Object.values(BUILDINGS).filter((b) => (b.kind === 'production' || b.kind === 'special') && b.price > 0);
       if (tab === 'animal') list = Object.values(BUILDINGS).filter((b) => b.kind === 'animal' || b.kind === 'pet');
@@ -497,6 +553,14 @@ function openShop() {
       }).join('')}</div>${more > 0 ? `<div class="panel-desc mt">… и още ${more} неща на по-високите нива 🔒</div>` : ''}`;
     },
     actions: {
+      buytool: (el) => {
+        const t = TOOL_SHOP.find((x) => x.id === el.dataset.id)!;
+        if (ITEMS[t.id].level > S.level) { UI.toast(`Отключва се на ниво ${ITEMS[t.id].level}`, 'info'); sfx('error'); return; }
+        if (!spend(t.price)) { UI.toast('Нямаш достатъчно монети', 'warn'); sfx('error'); return; }
+        addItem(t.id, t.qty, true);
+        sfx('coin');
+        UI.toast(`Купи: ${ITEMS[t.id].name}${t.qty > 1 ? ' ×' + t.qty : ''}`, 'ok');
+      },
       buy: (el) => {
         const b = BUILDINGS[el.dataset.id!];
         if (b.level > S.level) { UI.toast(`Отключва се на ниво ${b.level}`, 'info'); sfx('error'); return; }
@@ -578,6 +642,33 @@ function openDeco(v: View) {
     actions: {
       move: () => { close(); C.farm.beginPlace(v.e.type, undefined, v); },
       sell: () => { C.farm.remove(v.e.uid); addCoins(refund); sfx('coin'); close(); },
+    },
+  }, true);
+}
+
+// =====================================================================
+// ПРЕПЯТСТВИЕ
+function openObstacle(v: View) {
+  const def = v.def;
+  const tool = def.tool!;
+  const shop = TOOL_SHOP.find((t) => t.id === tool)!;
+  const [c, xp] = OBSTACLE_REWARD[def.id] ?? [10, 3];
+  open(def.name, {
+    render: () => `<div class="big-ic">${img('m:' + def.model, 'ic-lg')}</div><div class="panel-desc">${def.desc}</div>
+      <div class="center">Трябва ти: <span class="need ${count(tool) ? '' : 'miss'}">${img(tool, '')}${ITEMS[tool].name} (имаш ${count(tool)})</span></div>
+      <div class="center mt">Награда: ${coinsHtml(c)} <span class="price">${img('star', 'ic-sm')}${xp}</span> и може би изненада 🎁</div>
+      <div class="btns">${count(tool) ? `<button class="btn" data-act="clear">${img(tool)} Разчисти</button>` : `<button class="btn gold" data-act="buy">Купи ${ITEMS[tool].name.toLowerCase()} за ${img('coin')}${fmt(shop.price)}</button>`}</div>`,
+    actions: {
+      clear: () => {
+        if (!takeAll({ [tool]: 1 })) { sfx('error'); return; }
+        close();
+        clearObstacle(C.farm, v);
+      },
+      buy: () => {
+        if (!spend(shop.price)) { UI.toast('Нямаш достатъчно монети', 'warn'); sfx('error'); return; }
+        addItem(tool, shop.qty, true);
+        sfx('coin');
+      },
     },
   }, true);
 }
@@ -1008,6 +1099,7 @@ export function bindUI(ctx: Ctx) {
     choose,
     visitTap,
     openSocial,
+    openObstacle,
     placing(on: boolean, ok: boolean) {
       $('#placebar').classList.toggle('show', on);
       ($('#pok') as HTMLButtonElement).classList.toggle('gray', !ok);

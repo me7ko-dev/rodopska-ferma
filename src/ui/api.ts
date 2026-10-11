@@ -27,6 +27,7 @@ export interface UIApi {
   /** Натискане на обект, докато си на гости (помощ). */
   visitTap(v: View): void;
   openSocial(tab?: string): void;
+  openObstacle(v: View): void;
 }
 
 export const UI = {} as UIApi;
