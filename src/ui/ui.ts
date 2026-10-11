@@ -10,7 +10,9 @@ import { FISHLOG_REWARD, fishLogComplete } from '../game/fishing';
 import { mine, hit, wallDone, descend, pickLeft, mineTools } from '../game/mine';
 import { MINE_LEVEL } from '../game/data';
 import { track } from '../game/tasks';
-import { initEvents } from './events';
+import { initEvents, openTasks, openFair } from './events';
+import { FEATURES } from '../game/data';
+import { POND, MINE_POS } from '../world/layout';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
@@ -1159,6 +1161,15 @@ function showHelp() {
       🏡 <b>Имоти:</b> подобри къщата си и купувай къщи в селото — носят наем всеки час.<br>
       🚗 <b>Коли:</b> купи гараж и кола, после я карай из селото и Родопите.<br>
       👥 <b>Съседи:</b> направи си профил (име и парола) — фермата ти се пази в облака. Добавяй приятели, ходи им на гости и им помагай (поливаш нивите, храниш животните). Има класации и пазар между играчите в Сергията.<br>
+      🪓 <b>Препятствия:</b> храсти, дървета и камъни растат сами. Разчисти ги с брадва, трион, лопата или динамит — дават монети, опит и изненади.<br>
+      🧰 <b>Находки:</b> при жътва и събиране понякога намираш материали. С тях складът се разширява по-евтино. Любимците също намират неща — гледай за подаръче над тях.<br>
+      🎣 <b>Риболов (ниво 6):</b> натисни кея на езерото. Хвърли, изчакай плувката да потъне и натисни бързо. После навивай, но пускай, когато опъването стане червено.<br>
+      🚂 <b>Товарен влак (ниво 7):</b> идва на товарната гара до фермата. Напълни 9-те сандъка за голяма награда.<br>
+      🏆 <b>Родопски събор (ниво 8):</b> седмично състезание със съседните ферми. Взимай задачи и трупай точки.<br>
+      ⛏ <b>Рудник (ниво 9):</b> в скалите на запад. Копай с кирка или динамит — руда и кристали. Топилнята прави кюлчета, а Филигранната работилница — бижута.<br>
+      📅 <b>Задачи:</b> бутонът вляво — задачи за деня, сандъче и подарък за всеки ден.<br>
+      🍂 <b>Сезони:</b> природата се сменя с истинския календар. Сезонните култури растат по-бързо, а в магазина има сезонна украса.<br>
+      📷 <b>Фото режим:</b> бутонът с фотоапарата горе — снимай фермата си.<br>
       🖐 <b>Камера:</b> местиш с пръст, приближаваш с два пръста (или колелцето), въртиш с два пръста (или десния бутон / Q и E).
     </div>`,
     actions: {},
@@ -1170,6 +1181,7 @@ function showHelp() {
 function levelUp() {
   const lv = S.level;
   const unl = unlocksAt(lv);
+  const feat = FEATURES.find((f) => f.level === lv);
   const dia = lv % 10 === 0 ? 10 : lv % 5 === 0 ? 5 : 2;
   const coins = lv * 15 + lv * lv * 2;
   addDiamonds(dia);
@@ -1182,8 +1194,19 @@ function levelUp() {
       render: () => `<div class="lvlup"><div class="big outl">Ниво ${lv}</div>
         <div class="center">Награда: ${diaHtml(dia)} и ${coinsHtml(coins)}</div>
         ${unl.length ? `<div class="mt"><b>Отключено:</b></div><div class="unl">${unl.map((u) => `<div>${img(u.icon === 'home' ? 'm:house_red1' : u.icon === 'land' ? 'm:n_tree5' : u.icon, '')}<br>${u.name}</div>`).join('')}</div>` : ''}
-        <div class="btns"><button class="btn" data-act="close">Супер!</button></div></div>`,
-      actions: {},
+        ${feat ? `<div class="newfeat">✨ Ново: <b>${feat.name}</b>!</div>` : ''}
+        <div class="btns">${feat ? '<button class="btn blue" data-act="feat">👉 Покажи ми</button>' : ''}<button class="btn" data-act="close">Супер!</button></div></div>`,
+      actions: {
+        feat: () => {
+          close();
+          const rig = C.farm.rig;
+          if (feat!.level === 6) { rig.flyTo(POND.x + 7, POND.z + 4, 30); UI.toast('🎣 Натисни дървения кей на езерото, за да ловиш риба!', 'ok'); }
+          else if (feat!.level === 7) UI.openOrders('train');
+          else if (feat!.level === 8) openFair();
+          else if (feat!.level === 9) { rig.flyTo(MINE_POS.x + 8, MINE_POS.z, 32); setTimeout(() => UI.openMine(), 1600); }
+          else openTasks('day');
+        },
+      },
     }, true);
     C.farm.buildLands();
     C.village.build();

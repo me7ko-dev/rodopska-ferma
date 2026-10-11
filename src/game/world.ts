@@ -5,7 +5,7 @@ import { instance, animationsOf, has, loadModel } from '../engine/assets';
 import { cropMesh, soilMesh } from './crops3d';
 import { fence, yard, trough, beehive, orderBoard, overgrowth, saleSign } from './props';
 import { flyTo, popText, marker, removeMarker, bounce, sparkle, debris, dust, type Marker } from './fx';
-import { rollDrop } from './loot';
+import { rollDrop, giveFound } from './loot';
 import { landObstacles } from './obstacles';
 import { isSeasonal } from '../world/seasons';
 import { track } from './tasks';
@@ -1227,6 +1227,36 @@ class PetView implements View {
       if (ea) this.eat = this.mixer.clipAction(ea);
       this.idle?.play();
     }
+    // любимецът от време на време намира нещо из фермата
+    this.mk = marker(new THREE.Vector3(), `<img src="${icon('gift')}">`, 'mk bubble small gift');
+    this.mk.onClick = () => this.tap();
+    if (this.e.ready == null) this.e.ready = now() + (1 + Math.random() * 2) * 3600 * 1000;
+  }
+  mk: Marker;
+  /** Какво е намерил любимецът. */
+  private fetch() {
+    const pos = this.model.getWorldPosition(new THREE.Vector3()).setY(this.height + 0.8);
+    const r = Math.random();
+    if (r < 0.4) {
+      const c = 20 + S.level * 6 + Math.round(Math.random() * 30);
+      addCoins(c);
+      flyTo('coin', pos, '#hud-coins', 4);
+      popText(`${this.def.name} намери ${c} монети!`, pos, '#ffe066', true);
+      sfx('coin');
+    } else if (r < 0.48) {
+      S.diamonds += 1;
+      emit('diamonds');
+      flyTo('diamond', pos, '#hud-diamonds', 1);
+      popText(`${this.def.name} намери диамант! 💎`, pos, '#bff7ff', true);
+      sfx('find');
+    } else if (r < 0.6 && S.level >= ITEMS.bait.level) giveFound('bait', 3, pos);
+    else {
+      const loot = ['axe', 'shovel', 'saw', 'bolt', 'plank', 'tape', 'nail', 'screw', 'panel', 'pickaxe'].filter((id) => ITEMS[id].level <= S.level);
+      giveFound(loot[(Math.random() * loot.length) | 0], 1, pos);
+    }
+    bounce(this.model);
+    this.e.ready = now() + (2 + Math.random() * 2) * 3600 * 1000;
+    save();
   }
   /** Свободна точка наблизо, до която пътят не минава през сгради. */
   pickTarget() {
@@ -1252,6 +1282,7 @@ class PetView implements View {
   }
   tap() {
     if (VISIT) { UI.visitTap(this); return; }
+    if (now() >= (this.e.ready ?? 0)) { this.fetch(); return; }
     sfx('heart');
     // скача от радост и тръгва нанякъде
     bounce(this.model);
@@ -1262,6 +1293,8 @@ class PetView implements View {
   update(t: number, dt: number) {
     this.mixer?.update(dt);
     const m = this.model;
+    this.mk.visible = !VISIT && now() >= (this.e.ready ?? 0);
+    if (this.mk.visible) m.getWorldPosition(this.mk.pos).setY(this.height + 1.1);
     if (this.target) {
       const wp = this.root.position.clone().add(m.position);
       const dx = this.target.x - wp.x, dz = this.target.z - wp.z, d = Math.hypot(dx, dz);
@@ -1293,7 +1326,7 @@ class PetView implements View {
       }
     }
   }
-  dispose() {}
+  dispose() { removeMarker(this.mk); }
 }
 
 // =====================================================================

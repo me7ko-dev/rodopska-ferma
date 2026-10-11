@@ -407,3 +407,4 @@ body.photo #ui, body.photo #markers, body.photo #hud-side { display: none !impor
 .ph-flash { position: fixed; inset: 0; background: #fff; z-index: 60; pointer-events: none; animation: phflash .6s forwards; }
 @keyframes phflash { from { opacity: .9; } to { opacity: 0; } }
 .card .lock.sea { background: #f0a81a; }
+.newfeat { text-align: center; margin-top: 8px; font-size: 16px; background: #fff3c4; border: 3px dashed #f0a81a; border-radius: 14px; padding: 6px; }
