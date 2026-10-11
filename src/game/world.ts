@@ -997,12 +997,26 @@ class PenView implements View {
     save();
     return true;
   }
+  /** Животните подскачат и над тях изскачат сърчица. */
+  react() {
+    const a = ANIMALS[this.kind];
+    this.animals.forEach((an, i) => {
+      if (!an || i > 5) return;
+      setTimeout(() => {
+        bounce(an.obj);
+        an.wait = Math.max(an.wait, 1.5);
+        popText(i % 2 ? '❤' : '💕', this.root.localToWorld(an.obj.position.clone()).setY(a.size * 0.9 + 0.8), '#ff6b8a');
+      }, i * 110);
+    });
+    sfx(animalSound(this.kind));
+  }
   tap() {
     if (VISIT) { UI.visitTap(this); return; }
     if (this.collect()) return;
     const a = ANIMALS[this.kind];
     const hungry = this.e.animals!.filter((s) => s.fed == null).length;
-    if (a.feed && hungry && count(a.feed) > 0) { this.feedAll(); return; }
+    if (a.feed && hungry && count(a.feed) > 0) { this.feedAll(); this.react(); return; }
+    this.react();
     UI.openAnimals(this);
   }
   update(t: number, dt: number) {
@@ -1238,10 +1252,12 @@ class PetView implements View {
   }
   tap() {
     if (VISIT) { UI.visitTap(this); return; }
-    sfx(this.def.model.startsWith('dog') ? 'pop' : 'tap');
+    sfx('heart');
     // скача от радост и тръгва нанякъде
+    bounce(this.model);
+    popText('❤', this.root.position.clone().add(this.model.position).setY(this.height + 0.6), '#ff6b8a', true);
     this.wait = 0;
-    UI.openDeco(this);
+    setTimeout(() => UI.openDeco(this), 350);
   }
   update(t: number, dt: number) {
     this.mixer?.update(dt);

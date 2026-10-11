@@ -215,6 +215,97 @@ export function mineEntrance() {
   return g;
 }
 
+// ---------- сезонна украса ----------
+function snowman() {
+  const g = new THREE.Group();
+  const k = new Kit();
+  const snow = '#f4f8ff';
+  k.add('trim', new THREE.SphereGeometry(0.75, 20, 14), snow, M.at(0, 0.7, 0));
+  k.add('trim', new THREE.SphereGeometry(0.55, 20, 14), snow, M.at(0, 1.65, 0));
+  k.add('trim', new THREE.SphereGeometry(0.4, 20, 14), snow, M.at(0, 2.35, 0));
+  for (const y of [1.45, 1.7, 1.95]) k.add('trim', new THREE.SphereGeometry(0.06, 8, 6), '#1a1a1a', M.at(0, y, 0.52));
+  for (const x of [-0.14, 0.14]) k.add('trim', new THREE.SphereGeometry(0.05, 8, 6), '#1a1a1a', M.at(x, 2.45, 0.35));
+  k.add('trim', new THREE.ConeGeometry(0.07, 0.45, 10), '#f07a1a', M.at(0, 2.35, 0.55, Math.PI / 2, 0, 0));
+  for (let i = 0; i < 5; i++) { const a = (i / 4 - 0.5) * 1.6; k.add('trim', new THREE.SphereGeometry(0.03, 6, 4), '#1a1a1a', M.at(Math.sin(a) * 0.2, 2.2 - Math.cos(a) * 0.06, 0.36)); }
+  // шал и шапка
+  k.add('trim', new THREE.TorusGeometry(0.42, 0.09, 8, 20), '#d8283a', M.at(0, 2.05, 0, Math.PI / 2, 0, 0));
+  k.box('trim', 0.2, 0.55, 0.1, '#d8283a', 0.25, 1.8, 0.38, 0.03, [0, 0, 0.2]);
+  k.cyl('trim', 0.42, 0.06, '#222', M.at(0, 2.68, 0), 20);
+  k.cyl('trim', 0.28, 0.42, '#222', M.at(0, 2.9, 0), 20);
+  k.cyl('trim', 0.285, 0.08, '#d8283a', M.at(0, 2.75, 0), 20);
+  // ръце от клонки
+  for (const s of [-1, 1]) k.cyl('trim', 0.035, 0.9, '#6b4a2a', M.at(s * 0.8, 1.85, 0, 0, 0, s * 1.05), 6);
+  g.add(kitMeshes(k));
+  g.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+registerModel('pb_snowman', snowman);
+
+function pumpkins() {
+  const g = new THREE.Group();
+  const k = new Kit();
+  k.box('trim', 1.6, 0.9, 1.0, '#e2c060', -0.3, 0.45, -0.2, 0.12);
+  for (let i = 0; i < 6; i++) k.box('trim', 1.62, 0.04, 1.02, '#c9a440', -0.3, 0.15 + i * 0.13, -0.2);
+  const pump = (x: number, z: number, s: number, c: string) => {
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; k.add('trim', new THREE.SphereGeometry(0.22 * s, 12, 10), c, M.at(x + Math.cos(a) * 0.17 * s, 0.25 * s, z + Math.sin(a) * 0.17 * s, 0, 0, 0, 1, 1.1, 1)); }
+    k.cyl('trim', 0.04 * s, 0.18 * s, '#5a7a2a', M.at(x, 0.52 * s, z), 6);
+  };
+  pump(0.9, 0.4, 1.4, '#f08a1e');
+  pump(0.4, 0.75, 1.0, '#e8761a');
+  pump(-0.6, 0.6, 1.1, '#f0a03a');
+  pump(-0.3, -0.1, 0.9, '#f08a1e');
+  // сноп царевица
+  for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; k.cyl('trim', 0.04, 2.0, '#c8b060', M.at(1.0 + Math.cos(a) * 0.15, 1.0, -0.5 + Math.sin(a) * 0.15, Math.sin(a) * 0.15, 0, Math.cos(a) * 0.15), 5); }
+  k.cyl('trim', 0.2, 0.12, '#8a5a2a', M.at(1.0, 0.9, -0.5), 10);
+  g.add(kitMeshes(k));
+  g.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+registerModel('pb_pumpkins', pumpkins);
+
+function tulips() {
+  const g = new THREE.Group();
+  const k = new Kit();
+  k.box('trim', 2.8, 0.35, 1.6, '#8a5a32', 0, 0.17, 0, 0.04);
+  k.box('trim', 2.6, 0.06, 1.4, '#5a3a22', 0, 0.36, 0);
+  const cols = ['#e5332a', '#ffd23a', '#ff6fa8', '#f08a1e', '#ffffff', '#a84ad8'];
+  for (let i = 0; i < 24; i++) {
+    const x = -1.15 + (i % 8) * 0.33 + ((Math.floor(i / 8) % 2) * 0.15), z = -0.5 + Math.floor(i / 8) * 0.48;
+    const h = 0.55 + ((i * 37) % 10) / 40;
+    k.cyl('trim', 0.025, h, '#4a8a2a', M.at(x, 0.36 + h / 2, z), 5);
+    k.add('trim', new THREE.SphereGeometry(0.1, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.62), cols[(i * 5) % cols.length], M.at(x, 0.36 + h + 0.05, z, Math.PI, 0, 0, 1, 1.5, 1));
+    k.add('trim', new THREE.SphereGeometry(0.09, 8, 6), '#5aa03a', M.at(x + 0.06, 0.5, z, 0, 0, 0.6, 0.4, 1.4, 0.2));
+  }
+  g.add(kitMeshes(k));
+  g.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+registerModel('pb_tulips', tulips);
+
+function parasol() {
+  const g = new THREE.Group();
+  const k = new Kit();
+  k.cyl('trim', 0.05, 2.6, '#e8e0d0', M.at(0, 1.3, 0), 8);
+  for (let i = 0; i < 8; i++) {
+    const seg = new THREE.ConeGeometry(1.6, 0.6, 2, 1, true, (i / 8) * Math.PI * 2, Math.PI / 4);
+    k.add('trim', seg, i % 2 ? '#e5332a' : '#ffffff', M.at(0, 2.75, 0));
+  }
+  k.cyl('trim', 0.25, 0.1, '#bbb', M.at(0, 0.05, 0), 12);
+  for (const s of [-1, 1]) {
+    const x = s * 1.25;
+    k.box('trim', 0.7, 0.08, 1.7, '#3a7ac0', x, 0.4, 0.3, 0.03, [0, 0, 0]);
+    k.box('trim', 0.7, 0.08, 0.8, '#3a7ac0', x, 0.68, -0.75, 0.03, [0.7, 0, 0]);
+    for (const z of [-0.4, 1.0]) for (const dx of [-0.3, 0.3]) k.cyl('trim', 0.025, 0.4, '#d8d0c0', M.at(x + dx, 0.2, z), 6);
+  }
+  k.cyl('trim', 0.35, 0.05, '#c8a46b', M.at(0, 0.55, 1.2), 14);
+  k.cyl('trim', 0.04, 0.55, '#c8a46b', M.at(0, 0.27, 1.2), 6);
+  k.cyl('trim', 0.06, 0.2, '#f2e2a0', M.at(0.1, 0.68, 1.15), 10);
+  g.add(kitMeshes(k));
+  g.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+registerModel('pb_parasol', parasol);
+
 /** Дървен кей с колчета (за риболова). Дължина по +Z. */
 export function pier(len = 5.5) {
   const k = new Kit();

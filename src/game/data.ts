@@ -300,6 +300,8 @@ export interface BuildingDef {
   animal?: string;
   /** препятствие: с какъв инструмент се разчиства */
   tool?: string;
+  /** сезонна украса — купува се само в този сезон */
+  season?: 'spring' | 'summer' | 'autumn' | 'winter';
   unique?: boolean;
   tint?: string; // пребоядисване на покрива/стените
 }
@@ -549,6 +551,13 @@ deco('d_wagon', 'Каручка за сено', 'wagon', 3.4, [4, 2], 12, 900);
 deco('d_windmill', 'Малка мелница', 'windmill2', 5, [4, 4], 18, 3000);
 deco('d_stalls', 'Пазарни сергии', 'stalls', 8, [8, 6], 25, 8000);
 deco('d_castle', 'Крепост', 'castle', 16, [16, 16], 45, 120000);
+// сезонна украса
+const seasonal = (id: string, name: string, model: string, size: number, foot: [number, number], price: number, season: BuildingDef['season'], desc: string) =>
+  b({ id, name, desc, model, size, foot, level: 3, price, kind: 'deco', season });
+seasonal('d_snowman', 'Снежен човек', 'pb_snowman', 2.4, [2, 2], 150, 'winter', 'Весел снежен човек с шал и морков. Само през зимата!');
+seasonal('d_pumpkins', 'Тикви и сено', 'pb_pumpkins', 3.0, [3, 2], 180, 'autumn', 'Купа сено с тикви и царевица. Само наесен!');
+seasonal('d_tulips', 'Леха с лалета', 'pb_tulips', 2.8, [3, 2], 160, 'spring', 'Шарени лалета в дървена леха. Само напролет!');
+seasonal('d_parasol', 'Чадър и шезлонги', 'pb_parasol', 3.6, [4, 3], 220, 'summer', 'Сянка за горещите летни дни. Само през лятото!');
 
 // любимци — тичат свободно из фермата
 const pet = (id: string, name: string, model: string, size: number, level: number, price: number, desc: string) =>

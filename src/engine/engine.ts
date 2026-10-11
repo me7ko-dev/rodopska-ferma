@@ -232,6 +232,13 @@ export class Engine {
     this.sunOffset.set(x, y, z);
   }
 
+  /** Снимка на екрана (рисуваме кадъра и веднага го взимаме). */
+  snapshot(type = 'image/jpeg', q = 0.92) {
+    if (this.composer) this.composer.render(0);
+    else this.renderer.render(this.scene, this.camera);
+    return this.renderer.domElement.toDataURL(type, q);
+  }
+
   onUpdate(f: Updater) {
     this.updaters.push(f);
   }

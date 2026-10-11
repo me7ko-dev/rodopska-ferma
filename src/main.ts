@@ -27,6 +27,8 @@ import { People } from './game/npc';
 import { refillOrders } from './game/orders';
 import { tickObstacles } from './game/obstacles';
 import { showNews, NEWS_VERSION } from './ui/news';
+import { initPhoto } from './ui/photo';
+import { Rainbow } from './world/rainbow';
 import { tickCargo, onCargo, CARGO_RETURN } from './game/cargo';
 import { CargoTrain } from './world/cargotrain';
 import { Fishing } from './game/fishing';
@@ -195,6 +197,7 @@ async function boot() {
   const vehicles = new Vehicles(scene, farm, rig);
   const people = new People(scene, farm);
   bindUI({ farm, village, vehicles, people, engine });
+  initPhoto(engine, rig);
   if (visitInfo) visitHUD(visitInfo);
   else startOnline(farm);
   const ambient = new Ambient(scene, farm, engine);
@@ -232,8 +235,10 @@ async function boot() {
     glow.scale.setScalar(6);
     hv.root.add(glow);
   }
+  const rainbow = new Rainbow(scene);
   ambient.onRain = (on) => {
     const snow = season === 'winter';
+    if (!on && !snow && daynight.night < 0.3) setTimeout(() => rainbow.show(engine.camera), 2500);
     if (!snow) rainSound(on);
     UI.toast(on ? (snow ? '❄️ Вали сняг — нивите се напояват и растат два пъти по-бързо!' : '🌧 Вали дъжд — културите растат два пъти по-бързо!') : snow ? '☀️ Снегът спря' : '☀️ Дъждът спря', on ? 'ok' : 'info');
   };
@@ -261,6 +266,7 @@ async function boot() {
     people.update(dt);
     ambient.update(dt, engine.time.value);
     seasonFx.heavy = ambient.rainAmt;
+    rainbow.update(dt);
     seasonFx.update(dt, engine.time.value, rig.target.x, rig.target.z, rig.distance);
     daynight.update(dt, engine.time.value, ambient.rainAmt);
     railway.update(dt);
@@ -292,7 +298,7 @@ async function boot() {
     loadAll([...rest]);
   }, 3000);
   void isSeasonal;
-  (window as any).__rf = { fishing, cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
+  (window as any).__rf = { rainbow, fishing, cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
   if (!VISIT) setTimeout(() => showNews({ fishing: () => fishing.enter(), mine: () => UI.openMine(), train: () => UI.openOrders('train') }), 4200);
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');

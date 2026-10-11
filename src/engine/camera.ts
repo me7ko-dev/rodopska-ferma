@@ -43,6 +43,8 @@ export class CameraRig {
   smooth = 0.0008;
   /** Временно по-ниска камера (за въведението) — плавно изчезва. */
   pitchBias = 0;
+  /** По-ниска камера, докато е включен (фото режим). */
+  tilt = 0;
 
   constructor(public camera: THREE.PerspectiveCamera, public dom: HTMLElement) {
     dom.addEventListener('pointerdown', (e) => this.down(e));
@@ -231,7 +233,7 @@ export class CameraRig {
     this.distance = lerp(this.distance, g.distance, k);
     this.yaw = lerp(this.yaw, g.yaw, k);
     this.pitchBias = lerp(this.pitchBias, 0, k * 0.6);
-    const pitch = this.pitchFor(this.distance) - this.pitchBias;
+    const pitch = Math.max(0.05, this.pitchFor(this.distance) - this.pitchBias - this.tilt);
     const c = this.camera;
     const h = Math.sin(pitch) * this.distance, r = Math.cos(pitch) * this.distance;
     c.position.set(this.target.x + Math.sin(this.yaw) * r, h, this.target.z + Math.cos(this.yaw) * r);

@@ -619,14 +619,17 @@ function openShop() {
       const lockedAll = list.filter((b) => b.level > S.level);
       list = [...list.filter((b) => b.level <= S.level), ...lockedAll.slice(0, 3)];
       const more = lockedAll.length - 3;
+      const seasonName: Record<string, string> = { spring: 'напролет', summer: 'през лятото', autumn: 'наесен', winter: 'през зимата' };
+      if (tab === 'deco') list.sort((a, b) => (a.season === season ? -1 : 0) - (b.season === season ? -1 : 0));
       return `<div class="grid">${list.map((b) => {
-        const lk = b.level > S.level;
+        const off = !!b.season && b.season !== season;
+        const lk = b.level > S.level || off;
         const owned = C.farm.byType(b.id).length;
         const price = b.kind === 'field' ? fieldPrice() : b.price;
         const soldOut = (b.unique && owned > 0) || (b.kind === 'field' && owned >= maxFields());
         const ic = b.kind === 'field' ? img('wheat', 'ic') : b.kind === 'animal' ? img('animal:' + b.animal, 'ic') : b.kind === 'pet' ? img('m:' + b.model, 'ic') : img('b:' + b.id, 'ic');
         return `<div class="card ${lk || soldOut ? 'locked' : ''}" data-act="buy" data-id="${b.id}">
-          ${lk ? `<div class="lock">Ниво ${b.level}</div>` : ''}${owned ? `<div class="own">${b.kind === 'field' ? `${owned}/${maxFields()}` : owned}</div>` : ''}
+          ${off ? `<div class="lock">Само ${seasonName[b.season!]}</div>` : lk ? `<div class="lock">Ниво ${b.level}</div>` : b.season ? `<div class="lock sea">${SEASON_ICONS[b.season]} Сезонно</div>` : ''}${owned ? `<div class="own">${b.kind === 'field' ? `${owned}/${maxFields()}` : owned}</div>` : ''}
           ${ic}<div class="nm">${b.name}</div>
           ${soldOut ? `<div class="sub">${b.kind === 'field' ? 'Нужно е по-високо ниво' : 'Вече имаш'}</div>` : `<div class="price">${price ? `${img('coin')}${fmt(price)}` : 'Безплатно'}</div>`}</div>`;
       }).join('')}</div>${more > 0 ? `<div class="panel-desc mt">… и още ${more} неща на по-високите нива 🔒</div>` : ''}`;
@@ -643,6 +646,7 @@ function openShop() {
       buy: (el) => {
         const b = BUILDINGS[el.dataset.id!];
         if (b.level > S.level) { UI.toast(`Отключва се на ниво ${b.level}`, 'info'); sfx('error'); return; }
+        if (b.season && b.season !== season) { UI.toast(`${b.name} се продава само ${({ spring: 'напролет', summer: 'през лятото', autumn: 'наесен', winter: 'през зимата' })[b.season]}`, 'info'); sfx('error'); return; }
         const owned = C.farm.byType(b.id).length;
         if (b.unique && owned) { UI.toast('Вече го имаш', 'info'); return; }
         if (b.kind === 'field' && owned >= maxFields()) { UI.toast(`Повече ниви — на ниво ${Math.ceil((owned - 5) / 2)}`, 'info'); return; }
