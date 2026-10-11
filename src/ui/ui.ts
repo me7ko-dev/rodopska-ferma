@@ -3,6 +3,8 @@ import { icon, img } from './icons';
 import { S, on, save, spend, spendDiamonds, addCoins, addDiamonds, addXP, count, used, cap, isSiloItem, isToolItem, takeAll, addItem, now, skipCost, resetSave, emit, achValue, achReady } from '../game/state';
 import { ITEMS, CROPS, BUILDINGS, CARS, HOME_TIERS, VILLAGE_HOUSES, LANDS, ANIMALS, TREES, MAX_ANIMALS, ACHIEVEMENTS, BARN_MATS, SILO_MATS, TOOL_SHOP, MAT_DIAMONDS, OBSTACLE_REWARD, xpForLevel, unlocksAt, type BuildingDef } from '../game/data';
 import { clearObstacle } from '../game/obstacles';
+import { cargo, cargoUnlocked, canFill, fillCrate, callNow, filledCount, CARGO_LEVEL } from '../game/cargo';
+import { CARGO_VIEW } from '../world/cargotrain';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
 import { rentDue, rentOf, nextUpgrade, RENT_CAP_H } from '../game/village';
 import { sfx, startMusic, stopMusic } from '../audio/sfx';
@@ -105,7 +107,8 @@ function refreshHUD() {
   $('#hud-coin-n').textContent = fmt(S.coins);
   $('#hud-dia-n').textContent = fmt(S.diamonds);
   $('#hud-name').textContent = S.name;
-  const ready = S.orders.filter((o) => canDeliver(o)).length;
+  const cg = cargo();
+  const ready = S.orders.filter((o) => canDeliver(o)).length + (cg?.st === 'here' ? cg.crates.filter((x) => canFill(x)).length : 0);
   $('#badge-orders').textContent = ready ? String(ready) : '';
   const rent = Object.keys(S.village).reduce((a, k) => a + rentDue(+k), 0);
   const daily = new Date(S.lastDaily).toDateString() !== new Date().toDateString();
@@ -463,11 +466,14 @@ function toolsChest(sel: string) {
 
 // =====================================================================
 // ПОРЪЧКИ
-function openOrders() {
+function openOrders(tab = 'orders') {
   refillOrders();
-  open('Поръчки от селото', {
+  open('Поръчки', {
     live: true,
+    tabs: [{ id: 'orders', label: '📋 Поръчки от селото' }, { id: 'train', label: cargoUnlocked() ? '🚂 Товарен влак' : `🚂 Влак (ниво ${CARGO_LEVEL})` }],
+    tab,
     render: () => {
+      if (current!.tab === 'train') return trainRender();
       const b = carBonus();
       let html = `<div class="panel-desc">Изпълни поръчка — пикапът ще я откара. ${b.pct ? `Колите ти дават +${b.pct}% монети.` : 'Купи кола за бонус монети!'}</div><div class="orders">`;
       S.orders.forEach((o, i) => {
@@ -502,8 +508,72 @@ function openOrders() {
         guideStep('order');
       },
       trash: (el) => { trash(S.orders[+el.dataset.i!]); sfx('close'); },
+      fill: (el) => {
+        const i = +el.dataset.i!;
+        const c = cargo();
+        const cr = c?.crates[i];
+        if (!cr) return;
+        if (!canFill(cr)) { UI.toast(`Липсва: ${ITEMS[cr.item].name} (${cr.qty - count(cr.item)})`, 'warn'); sfx('error'); return; }
+        const r = fillCrate(i);
+        if (!r) return;
+        const from = el.getBoundingClientRect();
+        const at = { x: from.left + from.width / 2, y: from.top };
+        flyTo('coin', at, '#hud-coins', 4);
+        flyTo('star', at, '#hud-xp', 2, 150);
+        sfx('coin');
+        if (c!.st === 'away') {
+          // всички 9 са пълни — голямата награда
+          const b = c!.bonus;
+          sfx('fanfare');
+          flyTo('coin', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-coins', 6, 300);
+          if (b.dia) flyTo('diamond', { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-diamonds', 3, 500);
+          for (const k of Object.keys(b.loot)) flyTo(k, { x: innerWidth / 2, y: innerHeight / 2 }, '#hud-barn', 1, 600);
+          UI.toast(`🚂 Всички сандъци са пълни! +${fmt(b.coins)} монети, +${b.xp} опит${b.dia ? `, +${b.dia} диаманта` : ''}`, 'ok');
+          sparkle(new THREE.Vector3(CARGO_VIEW.x, 3, CARGO_VIEW.z - 4), 40);
+        }
+      },
+      call: () => {
+        const c = cargo();
+        if (!c || c.st !== 'away') return;
+        const cost = skipCost((c.t - now()) / 1000);
+        if (!spendDiamonds(cost)) { UI.toast('Нямаш достатъчно диаманти', 'warn'); sfx('error'); return; }
+        callNow();
+        sfx('whistle');
+      },
+      seetrain: () => { close(); C.farm.rig.flyTo(CARGO_VIEW.x, CARGO_VIEW.z, 34); },
     },
   });
+}
+
+/** Разделът „Товарен влак“. */
+function trainRender() {
+  const c = cargo();
+  if (!c) return `<div class="big-ic">${img('m:barn_red', 'ic-lg')}</div><div class="center"><b>Товарният влак идва на ниво ${CARGO_LEVEL}.</b><br>Той носи 9 сандъка — напълни ги със стоки и вземи голяма награда!</div>`;
+  if (c.st === 'away') {
+    const left = (c.t - now()) / 1000;
+    return `<div class="center train-away">🚂<br><b>Товарният влак е на път.</b><br>Пристига след ⏱ ${fmtTime(left)}</div>
+      <div class="btns"><button class="btn blue" data-act="call">Повикай го веднага за ${img('diamond')}${skipCost(left)}</button></div>
+      <div class="panel-desc mt">Обслужени влакове: ${S.stats.trains ?? 0}</div>`;
+  }
+  const left = (c.t - now()) / 1000;
+  let html = `<div class="panel-desc">Напълни сандъците — всеки се плаща веднага. Тръгва след ⏱ <b>${fmtTime(left)}</b> · напълнени <b>${filledCount()}/9</b></div><div class="wagons">`;
+  for (let w = 0; w < 3; w++) {
+    html += `<div class="wagon"><div class="wnum">Вагон ${w + 1}</div>`;
+    for (let k = 0; k < 3; k++) {
+      const i = w * 3 + k;
+      const cr = c.crates[i];
+      if (!cr) continue;
+      const ok = canFill(cr);
+      html += `<div class="crate ${cr.done ? 'done' : ok ? 'ok' : ''}">${img(cr.item, 'ic-md')}<b>×${cr.qty}</b>
+        ${cr.done ? '<div class="chk">✓</div>' : `<div class="sub">имаш ${count(cr.item)}</div><div class="rw">${img('coin', 'ic-xs')}${fmt(cr.coins)} ${img('star', 'ic-xs')}${cr.xp}</div>
+        <button class="btn xs ${ok ? '' : 'gray'}" data-act="fill" data-i="${i}">Напълни</button>`}</div>`;
+    }
+    html += '</div>';
+  }
+  const b = c.bonus;
+  html += `</div><div class="upbox"><b>Напълни всички 9 сандъка и вземи:</b><div class="needs">${coinsHtml(b.coins)} <span class="price">${img('star', 'ic-sm')}${b.xp}</span>${b.dia ? diaHtml(b.dia) : ''}${Object.entries(b.loot).map(([k, n]) => `<span class="need">${img(k, '')}${n}</span>`).join('')}</div></div>
+    <div class="btns"><button class="btn blue sm" data-act="seetrain">👀 Виж влака</button></div>`;
+  return html;
 }
 
 // =====================================================================

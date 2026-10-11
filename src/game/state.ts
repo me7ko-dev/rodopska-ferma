@@ -1,4 +1,5 @@
 import { ITEMS, xpForLevel, START_LAND } from './data';
+import type { CargoState } from './cargo';
 
 export interface QueueItem { out: string; qty: number; start: number; end: number }
 export interface AnimalState { fed: number | null; ready: number | null } // fed = кога е нахранено; ready = кога продуктът е готов
@@ -48,7 +49,7 @@ export interface Save {
   tut: number;
   sound: boolean;
   music: boolean;
-  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number; helps?: number; traded?: number; found?: number; cleared?: number };
+  stats: { harvested: number; produced: number; orders: number; earned: number; visitors: number; helps?: number; traded?: number; found?: number; cleared?: number; trains?: number };
   ach: Record<string, number>;
   created: number;
   last: number;
@@ -56,6 +57,7 @@ export interface Save {
   cloudRev?: number; // последната версия, качена в облака
   obsT?: number; // кога за последно е поникнало препятствие
   luck?: number; // расте при всяка жътва без находка (за да не чакаш дълго)
+  cargo?: CargoState; // товарният влак
 }
 
 type Listener = (what: string) => void;

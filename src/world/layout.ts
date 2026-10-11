@@ -31,6 +31,17 @@ const CITY_FLAT = { minX: 165, maxX: 485, minZ: -66, maxZ: 128 };
 /** Теснолинейката минава по северния край на долината (z = RAIL_Z), между два тунела. */
 export const RAIL_Z = -52;
 export const RAIL = { west: -135, east: 530 };
+/** Товарната линия: отбива се от главната на запад, минава между гарата и фермата и се връща на изток. */
+export const SIDING_Z = -35.5;
+export const SIDING = { w0: -78, w1: -24, e0: 82, e1: 134 };
+/** Къде е товарният коловоз (z) при дадено x. */
+export function cargoZAt(x: number) {
+  const s = (a: number, b: number, v: number) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  if (x <= SIDING.w1) return RAIL_Z + (SIDING_Z - RAIL_Z) * s(SIDING.w0, SIDING.w1, x);
+  if (x >= SIDING.e0) return SIDING_Z + (RAIL_Z - SIDING_Z) * s(SIDING.e0, SIDING.e1, x);
+  return SIDING_Z;
+}
+
 /** Гарите: до фермата и в града (x на средата на перона). */
 export const STATIONS = [
   { x: 28, name: 'РОДОПИ', city: false },

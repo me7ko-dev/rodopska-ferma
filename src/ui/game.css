@@ -264,3 +264,18 @@ body.visiting #hud-bottom, body.visiting .money .pill:not([data-open="settings"]
 .seed.season { border-color: #f0a81a; }
 .seed .lk.sea { background: #f0a81a; }
 .settings .seasons { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+
+/* ---------- товарен влак ---------- */
+.wagons { display: flex; flex-direction: column; gap: 10px; }
+.wagon { display: grid; grid-template-columns: 74px repeat(3, 1fr); gap: 8px; align-items: stretch; background: #f1ddb3; border: 3px solid #d4a96a; border-radius: 16px; padding: 6px; }
+.wagon .wnum { display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #7a4a22; text-align: center; background: #e5c992; border-radius: 12px; }
+.crate { background: #fffdf6; border: 3px solid #ecd3a3; border-radius: 14px; padding: 4px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative; font-size: 13px; }
+.crate.ok { border-color: #8fd45f; background: #f6ffee; }
+.crate.done { border-color: #6cc53f; background: #ecffd9; justify-content: center; }
+.crate .chk { position: absolute; right: 6px; top: 4px; color: #fff; background: #4fa52c; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.crate .sub { font-size: 11.5px; color: #8a6440; }
+.crate .rw { display: flex; align-items: center; gap: 2px; font-weight: 800; font-size: 12px; }
+.ic-xs { width: 20px; height: 20px; vertical-align: middle; }
+.train-away { font-size: 16px; line-height: 1.6; padding: 10px; }
+.train-away::first-line { font-size: 48px; }
+@media (max-width: 520px) { .wagon { grid-template-columns: repeat(3, 1fr); } .wagon .wnum { grid-column: 1 / -1; padding: 2px; } }

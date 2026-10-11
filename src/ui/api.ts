@@ -12,7 +12,7 @@ export interface UIApi {
   openTree(v: View): void;
   openDeco(v: View): void;
   openHome(): void;
-  openOrders(): void;
+  openOrders(tab?: string): void;
   openGarage(): void;
   openMarket(): void;
   openLand(id: string): void;

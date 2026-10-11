@@ -26,6 +26,8 @@ import { Vehicles } from './game/vehicles';
 import { People } from './game/npc';
 import { refillOrders } from './game/orders';
 import { tickObstacles } from './game/obstacles';
+import { tickCargo, onCargo, CARGO_RETURN } from './game/cargo';
+import { CargoTrain } from './world/cargotrain';
 import * as ordersMod from './game/orders';
 import * as dataMod from './game/data';
 import * as stateMod from './game/state';
@@ -182,6 +184,20 @@ async function boot() {
   const city = new City(scene, engine.quality);
   vehicles.obstacles.push((x, z) => city.blocked(x, z));
   railway.onWhistle = (x) => whistleNear(x, rig.target.x);
+  // товарният влак
+  const cargoTrain = new CargoTrain(scene, railway);
+  cargoTrain.onWhistle = (x) => whistleNear(x, rig.target.x);
+  farm.extraPick.push({ obj: cargoTrain.proxy, tap: () => cargoTrain.here && UI.openOrders('train') });
+  if (!VISIT) {
+    tickCargo();
+    cargoTrain.sync(false);
+    onCargo((e) => {
+      cargoTrain.sync(e !== 'fill');
+      if (e === 'arrive') UI.toast('🚂 Товарният влак пристигна на товарната гара! Напълни сандъците.', 'ok');
+      if (e === 'leave') UI.toast(`🚂 Товарният влак тръгна. Ще се върне след ${Math.round(CARGO_RETURN / 60000)} мин.`, 'info');
+      UI.refresh();
+    });
+  }
   // докосване на гарата — кога идва влакът
   const stProxy = new THREE.Mesh(new THREE.BoxGeometry(16, 7, 14), new THREE.MeshBasicMaterial({ visible: false }));
   stProxy.position.set(STATIONS[0].x, 3.5, RAIL_Z + 8);
@@ -239,7 +255,8 @@ async function boot() {
     updateMarkers();
     engine.followShadow(rig.target, Math.min(90, rig.distance * 0.95));
     // поръчките се попълват от само себе си; от време на време никне ново препятствие
-    if (!VISIT && performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); tickObstacles(farm); }
+    if (!VISIT && performance.now() - t0 > 5000) { t0 = performance.now(); refillOrders(); tickObstacles(farm); tickCargo(); }
+    cargoTrain.update(dt);
   });
   engine.start();
   // останалите модели (сгради за купуване, коли, къщи) — тихо във фонов режим
@@ -251,7 +268,7 @@ async function boot() {
     loadAll([...rest]);
   }, 3000);
   void isSeasonal;
-  (window as any).__rf = { seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
+  (window as any).__rf = { cargoTrain, seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);

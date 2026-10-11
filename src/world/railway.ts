@@ -6,8 +6,8 @@ import { sfx } from '../audio/sfx';
 
 // Родопската теснолинейка: релси между два тунела, гари до фермата и в града, парен влак с вагони.
 
-const RAIL_Y = 0.58; // горе на релсата
-const GAUGE = 1.1;
+export const RAIL_Y = 0.58; // горе на релсата
+export const GAUGE = 1.1;
 
 // ---------- текстури ----------
 function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, repeat = false) {
@@ -22,7 +22,7 @@ function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => 
   return t;
 }
 
-function gravelTexture() {
+export function gravelTexture() {
   const r = rng(77);
   return canvasTex(128, 128, (g) => {
     g.fillStyle = '#8a8378';
@@ -250,7 +250,7 @@ function station(x: number, name: string, city: boolean) {
 }
 
 // ---------- влакът ----------
-interface Car { obj: THREE.Group; len: number; wheels: THREE.Mesh[]; rods?: { m: THREE.Mesh; y: number; z: number }[]; chimney?: THREE.Vector3 }
+export interface Car { obj: THREE.Group; len: number; wheels: THREE.Mesh[]; rods?: { m: THREE.Mesh; y: number; z: number }[]; chimney?: THREE.Vector3 }
 
 function wheelPair(r: number, color: string, spokes = false) {
   const k = new Kit();
@@ -264,7 +264,7 @@ function wheelPair(r: number, color: string, spokes = false) {
   return k.merged('w')!;
 }
 
-function locomotive(): Car {
+export function locomotive(): Car {
   const k = new Kit();
   const black = '#1e1f21', green = '#24513b', red = '#b3261e', brass = '#c9a24a';
   // рама и буфери
@@ -331,7 +331,7 @@ function locomotive(): Car {
   return { obj, len: 8.2, wheels, rods, chimney: new THREE.Vector3(0, 3.9, 3.35) };
 }
 
-function bogies(obj: THREE.Group, zs: number[], wheels: THREE.Mesh[]) {
+export function bogies(obj: THREE.Group, zs: number[], wheels: THREE.Mesh[]) {
   const k = new Kit();
   for (const z of zs) {
     k.box('trim', 1.6, 0.3, 2.2, '#222', 0, 0.75, z, 0.03);
@@ -410,7 +410,7 @@ function freightCar(kind: 'logs' | 'tank' | 'box'): Car {
 }
 
 /** Пушек от комина. */
-class Smoke {
+export class Smoke {
   pool: { s: THREE.Sprite; v: THREE.Vector3; life: number; max: number }[] = [];
   next = 0;
   constructor(public parent: THREE.Object3D, n: number) {
