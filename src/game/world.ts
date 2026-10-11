@@ -7,6 +7,7 @@ import { fence, yard, trough, beehive, orderBoard, overgrowth, saleSign } from '
 import { flyTo, popText, marker, removeMarker, bounce, sparkle, debris, dust, type Marker } from './fx';
 import { rollDrop } from './loot';
 import { landObstacles } from './obstacles';
+import { isSeasonal } from '../world/seasons';
 import { icon } from '../ui/icons';
 import { UI } from '../ui/api';
 import { sfx } from '../audio/sfx';
@@ -587,7 +588,7 @@ class FieldView implements View {
     const c = CROPS[crop];
     if (!spend(c.seed)) { UI.toast('Нямаш монети за семена', 'warn'); sfx('error'); return false; }
     const t = now();
-    const fast = S.cars.includes('tractor') ? 0.9 : 1;
+    const fast = (S.cars.includes('tractor') ? 0.9 : 1) * (isSeasonal(crop) ? 0.8 : 1);
     this.e.crop = crop;
     this.e.planted = t;
     this.e.ready = t + c.time * 1000 * fast;

@@ -13,6 +13,7 @@ function cmat(color: string, side = false) {
   let m = cmats.get(k);
   if (!m) {
     m = new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0, side: side ? THREE.DoubleSide : THREE.FrontSide });
+    m.userData.noSnow = true;
     addWind(m, 1.6, 0.05);
     cmats.set(k, m);
   }
@@ -422,6 +423,7 @@ export function cropMesh(crop: string, stage: number): THREE.Group {
 // ---------- почвата на нивата ----------
 let soilGeo: THREE.BufferGeometry | null = null;
 const soilMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+soilMat.userData.noSnow = true;
 
 /** Изорана нива 2.9×2.9 м със заоблени ръбове и бразди. */
 export function soilMesh() {

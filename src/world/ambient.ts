@@ -4,6 +4,7 @@ import { S, save, now } from '../game/state';
 import type { Farm } from '../game/world';
 import type { Engine } from '../engine/engine';
 import { SKY } from './sky';
+import { season } from './seasons';
 
 // Живот наоколо: пеперуди, птици, дим от работилниците и дъжд.
 
@@ -182,7 +183,7 @@ export class Ambient {
     const target = this.raining ? 1 : 0;
     this.rainAmt += (target - this.rainAmt) * Math.min(1, dt * 0.6);
     const a = this.rainAmt;
-    this.rain.visible = a > 0.02;
+    this.rain.visible = a > 0.02 && season !== 'winter';
     (this.rain.material as THREE.LineBasicMaterial).opacity = 0.55 * a;
     if (this.rain.visible) {
       const c = this.farm.rig.target;

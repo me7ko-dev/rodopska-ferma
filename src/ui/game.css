@@ -261,3 +261,6 @@ body.visiting #hud-bottom, body.visiting .money .pill:not([data-open="settings"]
 .upbox .needs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
 .upbox .need img { width: 34px; height: 34px; }
 .upbox .sub { font-size: 12px; color: #8a6440; margin-top: 6px; }
+.seed.season { border-color: #f0a81a; }
+.seed .lk.sea { background: #f0a81a; }
+.settings .seasons { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }

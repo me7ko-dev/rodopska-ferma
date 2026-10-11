@@ -18,6 +18,7 @@ import { initSocial, openSocial, marketTabs, marketRender, marketActions, resetM
 import { VISIT } from '../game/state';
 import { ON } from '../online/online';
 import * as THREE from 'three';
+import { isSeasonal, season, seasonMode, setSeasonMode, SEASON_NAMES, SEASON_ICONS, realSeason, type Season } from '../world/seasons';
 
 interface Ctx { farm: Farm; village: Village; vehicles: Vehicles; people: People; engine: Engine }
 let C: Ctx;
@@ -225,10 +226,11 @@ function openSeeds(f: View) {
   const sel = C.farm.tool?.kind === 'sow' ? C.farm.tool.crop : '';
   $('#seeds .bar').innerHTML = crops.map((c) => {
     const lk = c.level > S.level;
-    return `<div class="seed ${lk ? 'locked' : ''} ${sel === c.id ? 'on' : ''}" data-act="seed:${c.id}">
-      ${lk ? `<div class="lk">Ниво ${c.level}</div>` : ''}
+    const sea = isSeasonal(c.id);
+    return `<div class="seed ${lk ? 'locked' : ''} ${sel === c.id ? 'on' : ''} ${sea ? 'season' : ''}" data-act="seed:${c.id}">
+      ${lk ? `<div class="lk">Ниво ${c.level}</div>` : sea ? `<div class="lk sea">${SEASON_ICONS[season]} −20%</div>` : ''}
       ${img(c.id, '')}<div class="n">${ITEMS[c.id].name}</div>
-      <div class="s">⏱ ${fmtTime(c.time * (S.cars.includes('tractor') ? 0.9 : 1))} · 🪙${c.seed}</div></div>`;
+      <div class="s">⏱ ${fmtTime(c.time * (S.cars.includes('tractor') ? 0.9 : 1) * (sea ? 0.8 : 1))} · 🪙${c.seed}</div></div>`;
   }).join('');
   $('#seeds').classList.add('show');
   guideStep('seeds');
@@ -888,6 +890,7 @@ function openSettings() {
       <div class="row"><b>Звуци</b><span class="sp"></span><button class="btn sm ${S.sound ? '' : 'gray'}" data-act="sound">${S.sound ? 'Вкл.' : 'Изкл.'}</button></div>
       <div class="row"><b>Музика</b><span class="sp"></span><button class="btn sm ${S.music ? '' : 'gray'}" data-act="music">${S.music ? 'Вкл.' : 'Изкл.'}</button></div>
       <div class="row"><b>Ден и нощ</b><span class="sp"></span><button class="btn xs ${DN?.mode !== 'day' ? '' : 'gray'}" data-act="dn" data-m="real">Истинско време</button> <button class="btn xs ${DN?.mode === 'day' ? '' : 'gray'}" data-act="dn" data-m="day">Винаги ден</button></div>
+      <div class="row"><b>Сезон</b><span class="sp"></span><span class="seasons">${(['real', 'spring', 'summer', 'autumn', 'winter'] as const).map((m) => `<button class="btn xs ${seasonMode() === m ? '' : 'gray'}" data-act="season" data-m="${m}">${m === 'real' ? `Истински (${SEASON_ICONS[realSeason()]})` : SEASON_ICONS[m] + ' ' + SEASON_NAMES[m]}</button>`).join(' ')}</span></div>
       <div class="row"><b>Графика</b><span class="sp"></span>${(['low', 'medium', 'high'] as const).map((q) => `<button class="btn xs ${C.engine.quality === q ? '' : 'gray'}" data-act="q" data-q="${q}">${{ low: 'Бърза', medium: 'Средна', high: 'Най-хубава' }[q]}</button>`).join(' ')}</div>
       ${C.engine.quality === 'high' ? `<div class="row"><b>Меки сенки (AO)</b><span class="sp"></span><button class="btn xs ${C.engine.composer ? '' : 'gray'}" data-act="ao">${C.engine.composer ? 'Вкл.' : 'Изкл.'}</button></div>` : ''}
       <div class="row"><b>Онлайн профил</b><span class="sp"></span><button class="btn sm blue" data-act="online">${ON.me ? '👤 ' + ON.me.name.replace(/</g, '') : 'Влез / Регистрация'}</button></div>
@@ -901,6 +904,7 @@ function openSettings() {
       music: () => { S.music = !S.music; save(); S.music ? startMusic() : stopMusic(); },
       q: (el) => C.engine.setQuality(el.dataset.q as any),
       dn: (el) => DN?.setMode(el.dataset.m as 'real' | 'day'),
+      season: (el) => { setSeasonMode(el.dataset.m as 'real' | Season); UI.toast(`${SEASON_ICONS[season]} ${SEASON_NAMES[season]}`, 'info'); },
       help: () => { close(); showHelp(); },
       ao: () => C.engine.setAO(!C.engine.composer),
       online: () => openSocial('me'),

@@ -4,6 +4,7 @@ import '@fontsource/rubik/600.css';
 import '@fontsource/rubik/800.css';
 import './ui/style.css';
 import './ui/game.css';
+import { SeasonFx, season, isSeasonal } from './world/seasons'; // първо: добавката за сезоните в шейдърите
 import { Engine } from './engine/engine';
 import './game/retro'; // старите коли (модели от код)
 import { CameraRig } from './engine/camera';
@@ -176,6 +177,7 @@ async function boot() {
   const ambient = new Ambient(scene, farm, engine);
   const daynight = new DayNight(engine, sky, scene);
   bindDayNight(daynight);
+  const seasonFx = new SeasonFx(scene, engine.quality);
   const railway = new Railway(scene, engine.quality);
   const city = new City(scene, engine.quality);
   vehicles.obstacles.push((x, z) => city.blocked(x, z));
@@ -194,8 +196,9 @@ async function boot() {
     hv.root.add(glow);
   }
   ambient.onRain = (on) => {
-    rainSound(on);
-    UI.toast(on ? '🌧 Вали дъжд — културите растат два пъти по-бързо!' : '☀️ Дъждът спря', on ? 'ok' : 'info');
+    const snow = season === 'winter';
+    if (!snow) rainSound(on);
+    UI.toast(on ? (snow ? '❄️ Вали сняг — нивите се напояват и растат два пъти по-бързо!' : '🌧 Вали дъжд — културите растат два пъти по-бързо!') : snow ? '☀️ Снегът спря' : '☀️ Дъждът спря', on ? 'ok' : 'info');
   };
 
   // камера над фермата
@@ -220,6 +223,8 @@ async function boot() {
     vehicles.update(dt);
     people.update(dt);
     ambient.update(dt, engine.time.value);
+    seasonFx.heavy = ambient.rainAmt;
+    seasonFx.update(dt, engine.time.value, rig.target.x, rig.target.z, rig.distance);
     daynight.update(dt, engine.time.value, ambient.rainAmt);
     railway.update(dt);
     city.update(dt, daynight.night);
@@ -245,7 +250,8 @@ async function boot() {
     for (const h of HOME_TIERS) rest.add(h.model);
     loadAll([...rest]);
   }, 3000);
-  (window as any).__rf = { engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
+  void isSeasonal;
+  (window as any).__rf = { seasonFx, engine, rig, farm, village, vehicles, people, ambient, daynight, railway, city, S, THREE, icon, addXP, addCoins, mod: { orders: ordersMod, data: dataMod, state: stateMod }, UI, ready: true };
   const ld = document.getElementById('loading')!;
   ld.classList.add('hide');
   setTimeout(() => ld.remove(), 700);

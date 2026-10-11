@@ -133,6 +133,7 @@ export function buildNature(quality: 'low' | 'medium' | 'high') {
   }
   const pineGeo = cheapPineGeometry();
   const pineMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true });
+  pineMat.name = 'far-pine';
   const farMesh = new THREE.InstancedMesh(pineGeo, pineMat, far.length);
   far.forEach((mm, i) => farMesh.setMatrixAt(i, mm));
   farMesh.castShadow = false;
@@ -226,7 +227,9 @@ export function buildNature(quality: 'low' | 'medium' | 'high') {
     n_rock1: 1.4, n_rock2: 1.2, n_rock3: 1.3,
   };
   const tuftGeo = grassTuftGeometry(7, 3);
-  const tuftMat = addWind(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }), 0.8, 0.07);
+  const tuftBase = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide });
+  tuftBase.userData.grass = true;
+  const tuftMat = addWind(tuftBase, 0.8, 0.07);
   for (const [name, list] of Object.entries(deco)) {
     if (name === 'tuft') {
       const im = new THREE.InstancedMesh(tuftGeo, tuftMat, list.length);

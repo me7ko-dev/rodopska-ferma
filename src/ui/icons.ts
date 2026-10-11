@@ -3,6 +3,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { itemModel, hasItemModel } from '../game/items3d';
 import { instance, loadModel, has } from '../engine/assets';
 import { BUILDINGS, CARS, ANIMALS } from '../game/data';
+import { withoutSeason } from '../world/seasons';
 
 // Иконите се рисуват веднъж от 3D моделите в отделен малък рендерер и се пазят като картинки.
 
@@ -53,7 +54,7 @@ function render(obj: THREE.Object3D, view: 'item' | 'model' = 'item') {
   cam.near = dist / 50;
   cam.far = dist * 4;
   cam.updateProjectionMatrix();
-  R!.render(scene, cam);
+  withoutSeason(() => R!.render(scene, cam));
   const url = R!.domElement.toDataURL('image/png');
   scene.remove(holder);
   return url;

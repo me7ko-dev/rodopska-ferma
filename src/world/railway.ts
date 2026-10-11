@@ -113,6 +113,7 @@ function buildTrack(quality: string) {
   root.add(sleepers);
   // релсите
   const steel = new THREE.MeshStandardMaterial({ color: '#b7b9bb', roughness: 0.32, metalness: 0.75 });
+  steel.userData.noSnow = true;
   for (const s of [-1, 1]) {
     const rail = new THREE.Mesh(new THREE.BoxGeometry(L, 0.13, 0.09), steel);
     rail.position.set(cx, RAIL_Y - 0.065, RAIL_Z + (s * GAUGE) / 2);

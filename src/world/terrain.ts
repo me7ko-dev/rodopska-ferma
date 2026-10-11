@@ -99,6 +99,7 @@ export function buildTerrain() {
   const tex = detailTexture();
   tex.repeat.set(SIZE / 7, SIZE / 7);
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: tex, roughness: 0.95, metalness: 0 });
+  mat.userData.ground = true;
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
   mesh.name = 'terrain';
@@ -189,7 +190,10 @@ export function buildFarmGround(paths: { pts: [number, number][]; w: number; kin
   // детайл отблизо: същата шарка с трева като на терена, повторена на всеки 7 м
   const det = detailTexture();
   const rep = new THREE.Vector2((DECAL.maxX - DECAL.minX) / 7, (DECAL.maxZ - DECAL.minZ) / 7);
-  mat.onBeforeCompile = (sh) => {
+  mat.userData.ground = true;
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => {
+    prev.call(mat, sh, r);
     sh.uniforms.detailMap = { value: det };
     sh.uniforms.detailRep = { value: rep };
     sh.fragmentShader = sh.fragmentShader
@@ -272,6 +276,7 @@ export function buildRoad() {
   geo.setIndex(idx);
   geo.computeVertexNormals();
   const mat = new THREE.MeshStandardMaterial({ map: asphaltTexture(), roughness: 0.88, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+  mat.userData.noSnow = true;
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
   mesh.name = 'road';
