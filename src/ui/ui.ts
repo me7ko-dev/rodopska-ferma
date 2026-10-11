@@ -12,6 +12,7 @@ import { MINE_LEVEL } from '../game/data';
 import { track } from '../game/tasks';
 import { initEvents, openTasks, openFair } from './events';
 import { holidayBonus } from '../game/holidays';
+import { enterPhoto } from './photo';
 import { FEATURES } from '../game/data';
 import { POND, MINE_POS } from '../world/layout';
 import { refillOrders, canDeliver, deliver, trash, carBonus, makeable } from '../game/orders';
@@ -81,7 +82,7 @@ function buildHUD() {
     <div>
       <div class="stack">
         <div class="rbtn" id="btn-social" data-open="social">${img('friends')}<span class="outl">Съседи</span><div class="badge" id="badge-social"></div></div>
-        <div class="rbtn" id="btn-travel" data-open="travel">${img('m:townhouse1')}<span class="outl">Град</span></div>
+        <div class="rbtn" id="btn-travel" data-open="travel">${img('globe')}<span class="outl">Карта</span></div>
       </div>
       <div class="rbtn big" id="btn-shop" data-open="shop">${img('b:market')}<span class="outl">Магазин</span></div>
     </div>
@@ -210,20 +211,24 @@ function onClick(ev: MouseEvent) {
 function inCity() {
   return C.farm.rig.goal.x > 190;
 }
+/** Карта: бързо прелитане до фермата, езерото, рудника, гарата, селото или града. */
 function travel() {
   sfx('tap');
   const portrait = innerWidth < innerHeight;
-  if (inCity()) C.farm.rig.flyTo(0, -1, portrait ? 50 : 38);
-  else C.farm.rig.flyTo(330, 22, portrait ? 110 : 90);
-  setTimeout(travelLabel, 50);
+  const places: { id: string; name: string; icon: string; level: number; go: () => void }[] = [
+    { id: 'farm', name: 'Фермата', icon: 'b:barn', level: 1, go: () => C.farm.rig.flyTo(0, -1, portrait ? 50 : 38) },
+    { id: 'pond', name: 'Езерото (риболов)', icon: 'f_carp', level: 1, go: () => C.farm.rig.flyTo(POND.x + 7, POND.z + 4, 30) },
+    { id: 'mine', name: 'Рудникът', icon: 'pickaxe', level: 1, go: () => C.farm.rig.flyTo(MINE_POS.x + 8, MINE_POS.z, 34) },
+    { id: 'station', name: 'Товарната гара', icon: 'crate_icon', level: 1, go: () => C.farm.rig.flyTo(CARGO_VIEW.x, CARGO_VIEW.z, 40) },
+    { id: 'village', name: 'Селото', icon: 'm:house_red2', level: 1, go: () => C.farm.rig.flyTo(110, 30, 70) },
+    { id: 'city', name: 'Градът', icon: 'm:townhouse1', level: 1, go: () => C.farm.rig.flyTo(330, 22, portrait ? 110 : 90) },
+  ];
+  UI.panel('Къде отиваме?', `<div class="grid places">${places.map((p) => `<div class="card" data-act="${p.id}">${img(p.icon, 'ic')}<div class="nm">${p.name}</div></div>`).join('')}</div>`,
+    Object.fromEntries(places.map((p) => [p.id, () => { close(); p.go(); }])));
 }
+/** (Бутонът вече е „Карта“ — не сменя надписа си.) */
 function travelLabel() {
-  const b = document.getElementById('btn-travel');
-  if (!b) return;
-  const city = inCity();
-  if (b.dataset.city === String(city)) return;
-  b.dataset.city = String(city);
-  b.innerHTML = city ? `${img('b:barn')}<span class="outl">Ферма</span>` : `${img('m:townhouse1')}<span class="outl">Град</span>`;
+  void inCity;
 }
 
 // =====================================================================
@@ -1077,6 +1082,7 @@ function openSettings() {
       ${C.engine.quality === 'high' ? `<div class="row"><b>Меки сенки (AO)</b><span class="sp"></span><button class="btn xs ${C.engine.composer ? '' : 'gray'}" data-act="ao">${C.engine.composer ? 'Вкл.' : 'Изкл.'}</button></div>` : ''}
       <div class="row"><b>Онлайн профил</b><span class="sp"></span><button class="btn sm blue" data-act="online">${ON.me ? '👤 ' + ON.me.name.replace(/</g, '') : 'Влез / Регистрация'}</button></div>
       <div class="row"><b>Как се играе</b><span class="sp"></span><button class="btn sm blue" data-act="help">Покажи</button></div>
+      <div class="row"><b>Фото режим</b><span class="sp"></span><button class="btn sm blue" data-act="photo">📷 Снимай фермата</button></div>
       <div class="mt"><b>Автори на 3D моделите</b><div class="credits" id="credits">Зареждане…</div></div>
       <div class="btns"><button class="btn red sm" data-act="reset">Започни отначало</button></div>
     </div>`,
@@ -1088,6 +1094,7 @@ function openSettings() {
       dn: (el) => DN?.setMode(el.dataset.m as 'real' | 'day'),
       season: (el) => { setSeasonMode(el.dataset.m as 'real' | Season); UI.toast(`${SEASON_ICONS[season]} ${SEASON_NAMES[season]}`, 'info'); },
       help: () => { close(); showHelp(); },
+      photo: () => { close(); enterPhoto(); },
       ao: () => C.engine.setAO(!C.engine.composer),
       online: () => openSocial('me'),
       reset: () => {

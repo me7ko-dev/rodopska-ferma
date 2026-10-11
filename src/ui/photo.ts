@@ -9,7 +9,7 @@ let E: Engine, R: CameraRig;
 let bar: HTMLElement;
 let prevMin = 22;
 
-function enter() {
+export function enterPhoto() {
   UI.closeAll();
   document.body.classList.add('photo');
   bar.classList.add('show');
@@ -63,11 +63,11 @@ export function initPhoto(engine: Engine, rig: CameraRig) {
   const money = document.querySelector('#hud-top .money');
   if (money) {
     const p = document.createElement('div');
-    p.className = 'pill outl';
+    p.className = 'pill outl ph-pill';
     p.style.padding = '0 8px';
     p.textContent = '📷';
     p.title = 'Фото режим';
-    p.onclick = () => { sfx('tap'); enter(); };
+    p.onclick = () => { sfx('tap'); enterPhoto(); };
     money.insertBefore(p, money.lastElementChild);
   }
   bar = document.createElement('div');
