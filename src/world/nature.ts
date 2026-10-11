@@ -203,7 +203,7 @@ export function buildNature(quality: 'low' | 'medium' | 'high') {
     if (side === 0) { x = FARM.minX - o; z = FARM.minZ + r() * (FARM.maxZ - FARM.minZ); }
     if (side === 1) { x = FARM.maxX + o; z = FARM.minZ + r() * (FARM.maxZ - FARM.minZ); }
     if (side === 2) { z = FARM.minZ - o; x = FARM.minX + r() * (FARM.maxX - FARM.minX); }
-    if (side === 3) { z = FARM.maxZ + o; x = FARM.minX + r() * (FARM.maxX - FARM.minX); if (Math.abs(x - DRIVE.x) < 4) continue; }
+    if (side === 3) { z = FARM.maxZ + o; x = FARM.minX + r() * (FARM.maxX - FARM.minX); if (x > DRIVE.x - 4 && x < DRIVE.x + 30) continue; }
     const t = r();
     if (t < 0.55) addD(grasses[(r() * grasses.length) | 0], x, z, 0.9 + r() * 0.7);
     else if (t < 0.85) addD(flowers[(r() * flowers.length) | 0], x, z, 0.9 + r() * 0.5);

@@ -291,6 +291,8 @@ export function farmPaths() {
   // главна пътека през фермата (изток-запад) и към езерото
   P.push({ pts: [[-34, 12], [-18, 13], [0, 13.5], [DRIVE.x, 14], [20, 13], [34, 12]], w: 3, kind: 'dirt' });
   P.push({ pts: [[-34, 12], [-42, 10], [POND.x + 7, POND.z + 4]], w: 2.4, kind: 'dirt' });
+  // паркинг за колите на посетителите (до входа на фермата)
+  P.push({ pts: [[DRIVE.x + 3.5, ROAD_Z - 4.3], [DRIVE.x + 28.5, ROAD_Z - 4.3]], w: 2.9, kind: 'gravel' });
   // пътечки до къщите в селото
   for (const p of VILLAGE_PLOTS) {
     const side = p.z < ROAD_Z ? 1 : -1;

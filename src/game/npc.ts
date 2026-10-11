@@ -11,6 +11,13 @@ import { UI } from '../ui/api';
 import { sfx } from '../audio/sfx';
 import type { Farm } from './world';
 import { centerOf } from './world';
+import { retroCarLite, RETRO_PAINTS, type RetroKind } from './retro';
+
+/** Кола, с която идва посетител: пристига по пътя, паркира до входа и после си тръгва. */
+interface Arrival { car: THREE.Group; st: 'in' | 'park' | 'out'; path: THREE.Vector3[]; speed: number; slot: number; park: THREE.Vector3 }
+const CAR_KINDS: RetroKind[] = ['pickup', 'sedan', 'mini', 'pickup_wood', 'classic', 'van', 'jeep', 'taxi'];
+const LANE_W = ROAD_Z - 1.7; // лентата към запад (откъм фермата)
+const PARK_Z = ROAD_Z - 4.3;
 
 const NAMES = ['Баба Ремзие', 'Чичо Мустафа', 'Тодорка', 'Илиян', 'Фатме', 'Кольо', 'Сабрие', 'Митко', 'Айля', 'Наско'];
 const MODELS = ['man1', 'man2', 'woman1', 'woman_dress', 'woman_casual', 'man_sleeves', 'woman_tank', 'm_worker', 'w_worker'];
@@ -72,7 +79,8 @@ interface Visitor extends Walker {
   qty: number;
   coins: number;
   xp: number;
-  state: 'come' | 'wait' | 'leave';
+  state: 'car' | 'come' | 'wait' | 'leave';
+  arrival?: Arrival;
   mk: Marker;
   spot: THREE.Vector3;
   waitT: number;
@@ -82,6 +90,7 @@ export class People {
   farmer: Walker;
   farmerWait = 2;
   visitors: Visitor[] = [];
+  arrivals: Arrival[] = [];
   nextVisitor = 25;
   group = new THREE.Group();
 
@@ -127,12 +136,28 @@ export class People {
     const board = this.farm.byType('board')[0];
     const base = board ? centerOf(board.e) : new THREE.Vector3(DRIVE.x, 0, FARM.maxZ - 6);
     w.spot = new THREE.Vector3(DRIVE.x - 2.2 - n * 1.6, 0, base.z + 2.5 + n * 0.5);
-    w.obj.position.set(DRIVE.x + (Math.random() < 0.5 ? -18 : 18), 0, ROAD_Z + 4.6);
-    w.path = [new THREE.Vector3(DRIVE.x + 1.2, 0, ROAD_Z + 4.6), new THREE.Vector3(DRIVE.x + 1.2, 0, ROAD_Z - 3), new THREE.Vector3(DRIVE.x, 0, w.spot.z + 1.5), w.spot.clone()];
     w.speed = 2.9;
     w.mk = marker(new THREE.Vector3(), `<img src="${icon(item)}"><b>${qty}</b>`, 'mk bubble visitor');
     w.mk.onClick = () => this.talk(w);
-    this.group.add(w.obj);
+    // някои идват с кола — паркират до входа на фермата
+    const free = [0, 1, 2].filter((s) => !this.arrivals.some((a) => a.slot === s));
+    if (S.level >= 3 && free.length && Math.random() < 0.6) {
+      const slot = free[0];
+      const kind = CAR_KINDS[(Math.random() * CAR_KINDS.length) | 0];
+      const car = retroCarLite(kind, kind === 'taxi' ? '#f2c230' : RETRO_PAINTS[(Math.random() * RETRO_PAINTS.length) | 0]);
+      const park = new THREE.Vector3(DRIVE.x + 8 + slot * 6.2, 0.06, PARK_Z);
+      car.position.set(DRIVE.x + 170 + slot * 30, 0.06, LANE_W);
+      car.rotation.y = -Math.PI / 2;
+      this.group.add(car);
+      const a: Arrival = { car, st: 'in', slot, park, speed: 11, path: [new THREE.Vector3(park.x + 12, 0.06, LANE_W), new THREE.Vector3(park.x + 4, 0.06, PARK_Z + 0.9), park.clone()] };
+      this.arrivals.push(a);
+      w.arrival = a;
+      w.state = 'car';
+    } else {
+      w.obj.position.set(DRIVE.x + (Math.random() < 0.5 ? -18 : 18), 0, ROAD_Z + 4.6);
+      w.path = [new THREE.Vector3(DRIVE.x + 1.2, 0, ROAD_Z + 4.6), new THREE.Vector3(DRIVE.x + 1.2, 0, ROAD_Z - 3), new THREE.Vector3(DRIVE.x, 0, w.spot.z + 1.5), w.spot.clone()];
+      this.group.add(w.obj);
+    }
     this.visitors.push(w);
   }
 
@@ -157,10 +182,56 @@ export class People {
   leave(w: Visitor) {
     w.state = 'leave';
     w.mk.visible = false;
+    if (w.arrival) {
+      const p = w.arrival.park;
+      w.path = [new THREE.Vector3(DRIVE.x, 0, w.obj.position.z + 1), new THREE.Vector3(DRIVE.x + 1.2, 0, PARK_Z - 1.0), new THREE.Vector3(p.x - 2.6, 0, PARK_Z - 0.4)];
+      return;
+    }
     w.path = [new THREE.Vector3(DRIVE.x - 1.2, 0, w.obj.position.z + 1), new THREE.Vector3(DRIVE.x - 1.2, 0, ROAD_Z - 3), new THREE.Vector3(DRIVE.x - 1.2, 0, ROAD_Z + 4.6), new THREE.Vector3(DRIVE.x - 70, 0, ROAD_Z + 4.6)];
   }
 
+  /** Колата следва точките си (плавно завива и спира накрая). */
+  private drive(a: Arrival, dt: number) {
+    const p = a.car.position, t = a.path[0];
+    if (!t) return true;
+    const dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz);
+    const last = a.path.length === 1;
+    const sp = last && a.st === 'in' ? Math.max(1.2, Math.min(a.speed, d * 1.6)) : a.speed;
+    if (d < 0.25) { a.path.shift(); return !a.path.length; }
+    const s = Math.min(d, sp * dt);
+    p.x += (dx / d) * s;
+    p.z += (dz / d) * s;
+    let da = Math.atan2(dx, dz) - a.car.rotation.y;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    a.car.rotation.y += da * Math.min(1, dt * 5);
+    return false;
+  }
+
   update(dt: number) {
+    // коли на посетителите
+    for (let i = this.arrivals.length - 1; i >= 0; i--) {
+      const a = this.arrivals[i];
+      if (a.st === 'park') continue;
+      const done = this.drive(a, dt);
+      if (a.st === 'in' && done) {
+        a.st = 'park';
+        a.car.rotation.y = -Math.PI / 2;
+        if (Math.abs(a.park.x - this.farm.rig.target.x) < 45) sfx('truck');
+        // посетителят слиза и тръгва към фермата
+        const w = this.visitors.find((v) => v.arrival === a);
+        if (w) {
+          w.obj.position.set(a.park.x - 2.6, 0, PARK_Z - 0.4);
+          w.path = [new THREE.Vector3(DRIVE.x + 1.2, 0, PARK_Z - 1.0), new THREE.Vector3(DRIVE.x, 0, w.spot.z + 1.5), w.spot.clone()];
+          w.state = 'come';
+          this.group.add(w.obj);
+        }
+      }
+      if (a.st === 'out' && done) {
+        this.group.remove(a.car);
+        this.arrivals.splice(i, 1);
+      }
+    }
     // фермер
     if (stepWalker(this.farmer, dt)) {
       this.farmerWait -= dt;
@@ -176,6 +247,7 @@ export class People {
     }
     for (let i = this.visitors.length - 1; i >= 0; i--) {
       const w = this.visitors[i];
+      if (w.state === 'car') continue;
       const done = stepWalker(w, dt);
       if (w.state === 'come' && done) {
         w.state = 'wait';
@@ -191,6 +263,13 @@ export class People {
         this.group.remove(w.obj);
         removeMarker(w.mk);
         this.visitors.splice(i, 1);
+        // качва се в колата и потегля на запад
+        const a = w.arrival;
+        if (a) {
+          a.st = 'out';
+          a.speed = 9;
+          a.path = [new THREE.Vector3(a.park.x - 7, 0.06, LANE_W), new THREE.Vector3(DRIVE.x - 190, 0.06, LANE_W)];
+        }
       }
     }
   }
